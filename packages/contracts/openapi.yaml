@@ -4,9 +4,9 @@ info:
   version: 0.1.0
   description: |
     Shared API contract for WEAVE (SIH26263) modular monolith.
-    Status: placeholder scaffold for initial repository setup.
+    All data in development/demo environments is strictly SYNTHETIC.
 servers:
-  - url: http://localhost:8000/api/v1
+  - url: /api/v1
 paths:
   /health:
     get:
@@ -19,11 +19,104 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status]
+                required: [status, environment, contract_version]
                 properties:
                   status:
                     type: string
                     example: ok
+                  environment:
+                    type: string
+                    example: SYNTHETIC
+                  contract_version:
+                    type: string
+                    example: 0.1.0
+  /institutions/me:
+    get:
+      summary: Current institution and regulator overview
+      operationId: getInstitutionsOverview
+      responses:
+        '200':
+          description: Institutions and program intake slices
+  /students/batches/upload:
+    post:
+      summary: Upload and deterministically validate a synthetic CSV batch
+      operationId: uploadStudentBatch
+      responses:
+        '201':
+          description: Batch ingested and validated
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /students/validation-results:
+    get:
+      summary: List student records with masked APAAR and deterministic rule outcomes
+      operationId: getValidationResults
+      responses:
+        '200':
+          description: Masked student records and rule outcomes
+  /conflicts:
+    get:
+      summary: List cross-institution and duplicate APAAR conflict cases
+      operationId: getConflicts
+      responses:
+        '200':
+          description: Conflict review queue
+  /conflicts/{case_id}/resolve:
+    post:
+      summary: Resolve a conflict case with human rationale and audit event
+      operationId: resolveConflict
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conflict case resolved
+  /attestations:
+    get:
+      summary: List platform-issued Ed25519 enrolment attestations
+      operationId: getAttestations
+      responses:
+        '200':
+          description: Attestation list
+    post:
+      summary: Issue a consent-verified Ed25519 student enrolment attestation
+      operationId: issueAttestation
+      responses:
+        '201':
+          description: Attestation signed and issued
+  /attestations/{id}/revoke:
+    post:
+      summary: Revoke an active attestation and append tamper-evident audit entry
+      operationId: revokeAttestation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Attestation revoked
+  /attestations/verify:
+    post:
+      summary: Verify an attestation ID or QR JSON payload against Ed25519 signature, expiry, and revocation
+      operationId: verifyAttestation
+      responses:
+        '200':
+          description: Deterministic verification result
+  /audit-events:
+    get:
+      summary: List tamper-evident SHA-256 hash-chained audit events
+      operationId: getAuditEvents
+      responses:
+        '200':
+          description: Audit trail and chain verification status
 components:
   schemas:
     ApiError:
