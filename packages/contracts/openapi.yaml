@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: WEAVE API Contract
+  version: 0.1.0
+  description: |
+    Shared API contract for WEAVE (SIH26263) modular monolith.
+    Status: placeholder scaffold for initial repository setup.
+servers:
+  - url: http://localhost:8000/api/v1
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+components:
+  schemas:
+    ApiError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Request body validation failed.
+            request_id:
+              type: string
+              example: req_01J123ABC456
+            details:
+              type: array
+              items:
+                type: object
