@@ -85,8 +85,8 @@ export const VerifyPage: React.FC = () => {
               to="/verify/att-2026-901"
               className={`px-2.5 py-1 rounded-sm font-mono border ${
                 token.toLowerCase() === 'att-2026-901'
-                  ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                  : 'bg-white text-[#20241F] border-[#DEDDD5]'
+                  ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
+                  : 'bg-white text-[#20241F] border-[#DEDDD5] hover:border-[#C5A869]'
               }`}
             >
               Valid (att-2026-901)
@@ -95,8 +95,8 @@ export const VerifyPage: React.FC = () => {
               to="/verify/att-2026-884"
               className={`px-2.5 py-1 rounded-sm font-mono border ${
                 token.toLowerCase() === 'att-2026-884'
-                  ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                  : 'bg-white text-[#20241F] border-[#DEDDD5]'
+                  ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
+                  : 'bg-white text-[#20241F] border-[#DEDDD5] hover:border-[#C5A869]'
               }`}
             >
               Revoked (att-2026-884)
@@ -105,8 +105,8 @@ export const VerifyPage: React.FC = () => {
               to="/verify/att-2025-772"
               className={`px-2.5 py-1 rounded-sm font-mono border ${
                 token.toLowerCase() === 'att-2025-772'
-                  ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                  : 'bg-white text-[#20241F] border-[#DEDDD5]'
+                  ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
+                  : 'bg-white text-[#20241F] border-[#DEDDD5] hover:border-[#C5A869]'
               }`}
             >
               Expired (att-2025-772)
@@ -115,8 +115,8 @@ export const VerifyPage: React.FC = () => {
               to="/verify/att-unknown-000"
               className={`px-2.5 py-1 rounded-sm font-mono border ${
                 token.toLowerCase() === 'att-unknown-000'
-                  ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                  : 'bg-white text-[#20241F] border-[#DEDDD5]'
+                  ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
+                  : 'bg-white text-[#20241F] border-[#DEDDD5] hover:border-[#C5A869]'
               }`}
             >
               Unknown Token
@@ -138,11 +138,11 @@ export const VerifyPage: React.FC = () => {
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             placeholder="Enter opaque verification token (e.g. att-2026-901)..."
-            className="flex-1 px-3 py-2 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+            className="flex-1 px-3 py-2 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
           />
           <button
             type="submit"
-            className="px-4 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md transition-colors whitespace-nowrap shrink-0"
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm"
           >
             Check Token
           </button>
@@ -298,7 +298,7 @@ export const VerifyPage: React.FC = () => {
                 {/* Cryptographic Verification Breakdown */}
                 <div className="pt-4 border-t border-[#DEDDD5] space-y-2 text-xs">
                   <div className="font-semibold text-[#20241F] flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-[#244C3A]" />
+                    <ShieldCheck className="w-4 h-4 text-[#9B7B32]" />
                     <span>Cryptographic &amp; Lifecycle Checks</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
@@ -336,19 +336,19 @@ export const VerifyPage: React.FC = () => {
                   >
                     <rect width="64" height="64" fill="#FFFFFF" />
                     <rect x="4" y="4" width="18" height="18" stroke="#20241F" strokeWidth="3" />
-                    <rect x="9" y="9" width="8" height="8" fill="#244C3A" />
+                    <rect x="9" y="9" width="8" height="8" fill="#181B18" />
                     <rect x="42" y="4" width="18" height="18" stroke="#20241F" strokeWidth="3" />
-                    <rect x="47" y="9" width="8" height="8" fill="#244C3A" />
+                    <rect x="47" y="9" width="8" height="8" fill="#181B18" />
                     <rect x="4" y="42" width="18" height="18" stroke="#20241F" strokeWidth="3" />
-                    <rect x="9" y="47" width="8" height="8" fill="#244C3A" />
-                    <rect x="26" y="8" width="4" height="4" fill="#20241F" />
+                    <rect x="9" y="47" width="8" height="8" fill="#181B18" />
+                    <rect x="26" y="8" width="4" height="4" fill="#C5A869" />
                     <rect x="32" y="14" width="4" height="4" fill="#20241F" />
-                    <rect x="26" y="26" width="12" height="12" fill="#244C3A" />
+                    <rect x="26" y="26" width="12" height="12" fill="#181B18" />
                     <rect x="8" y="28" width="6" height="4" fill="#20241F" />
                     <rect x="44" y="28" width="10" height="4" fill="#20241F" />
-                    <rect x="28" y="44" width="6" height="6" fill="#20241F" />
+                    <rect x="28" y="44" width="6" height="6" fill="#C5A869" />
                     <rect x="42" y="42" width="8" height="8" fill="#20241F" />
-                    <rect x="52" y="52" width="8" height="8" fill="#244C3A" />
+                    <rect x="52" y="52" width="8" height="8" fill="#C5A869" />
                   </svg>
                 </div>
                 <p className="text-[11px] font-mono text-[#686B65] break-all">

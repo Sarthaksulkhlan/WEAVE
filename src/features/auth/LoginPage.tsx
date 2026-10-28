@@ -70,7 +70,7 @@ export const LoginPage: React.FC = () => {
               accounts. Not production security.
             </span>
           </div>
-          <Link to="/" className="underline hover:text-[#244C3A] font-mono">
+          <Link to="/" className="underline hover:text-[#9B7B32] font-mono">
             Return to public overview
           </Link>
         </div>
@@ -114,7 +114,7 @@ export const LoginPage: React.FC = () => {
                 type="email"
                 autoComplete="username"
                 {...register('email')}
-                className="w-full px-3 py-2 text-sm bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+                className="w-full px-3 py-2 text-sm bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
               />
               {errors.email && (
                 <p role="alert" className="mt-1 text-xs text-[#99322B]">
@@ -136,7 +136,7 @@ export const LoginPage: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   {...register('password')}
-                  className="w-full pl-3 pr-10 py-2 text-sm font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+                  className="w-full pl-3 pr-10 py-2 text-sm font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
                 />
                 <button
                   type="button"
@@ -161,7 +161,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 px-4 text-sm font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-50 rounded-md transition-colors"
+              className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-50 rounded-md transition-colors shadow-sm"
             >
               {isSubmitting ? 'Establishing session...' : 'Sign in to workspace'}
             </button>
@@ -189,13 +189,13 @@ export const LoginPage: React.FC = () => {
                 key={acct.id}
                 type="button"
                 onClick={() => handleSelectDemoAccount(acct)}
-                className="w-full text-left p-4 bg-white border border-[#DEDDD5] hover:border-[#244C3A] rounded-md transition-colors space-y-1"
+                className="w-full text-left p-4 bg-white border border-[#DEDDD5] hover:border-[#C5A869] hover:bg-[#FAF8F3]/60 rounded-md transition-colors space-y-1"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-[#20241F]">
                     {acct.name} · {acct.roleLabel}
                   </span>
-                  <span className="font-mono text-[11px] text-[#244C3A]">{acct.role}</span>
+                  <span className="font-mono text-[11px] text-[#9B7B32] font-semibold">{acct.role}</span>
                 </div>
                 <div className="font-mono text-xs text-[#686B65]">{acct.email}</div>
                 <p className="text-xs text-[#686B65]">{acct.scopeDescription}</p>

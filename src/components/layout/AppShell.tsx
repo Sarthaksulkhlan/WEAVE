@@ -17,6 +17,7 @@ import {
   X,
   ExternalLink,
   Box,
+  ShieldCheck,
 } from 'lucide-react';
 import { WeaveLogo } from '../ui/WeaveLogo';
 import { useAuth } from '../../lib/auth';
@@ -70,9 +71,9 @@ const ROUTE_META: Record<string, { title: string; subtitle: string; crumb: strin
     crumb: 'Audit Timeline',
   },
   '/app/assistant': {
-    title: 'Administrative Guidance Copilot (Read-Only)',
-    subtitle: 'Multi-turn Gemini copilot and voice transcription (gemini-3.5-transcribe) for rules and intake.',
-    crumb: 'Admin Copilot',
+    title: 'WEAVE Knowledge Assistant (Rule-Based)',
+    subtitle: 'Curated compliance, validation rules, intake capacity, and verification guide with zero LLM API dependency.',
+    crumb: 'WEAVE Assistant',
   },
   '/app/settings': {
     title: 'Workspace & Session Settings',
@@ -80,6 +81,19 @@ const ROUTE_META: Record<string, { title: string; subtitle: string; crumb: strin
     crumb: 'Settings',
   },
 };
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+  badge?: string;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
 
 export const AppShell: React.FC = () => {
   const { user, apiMode, switchRolePersona, logout } = useAuth();
@@ -101,24 +115,51 @@ export const AppShell: React.FC = () => {
 
   const instScoped = isInstitutionScopedRole(user.role);
 
-  const navItems = [
-    { to: '/app', label: 'Overview', icon: LayoutDashboard, end: true },
-    { to: '/app/topology', label: '3D Spatial Topology', icon: Box, badge: 'Live 3D' },
-    { to: '/app/students', label: 'Student Records', icon: Users },
-    { to: '/app/imports', label: 'Import Batches', icon: FileSpreadsheet },
-    { to: '/app/imports/new', label: 'CSV Import Wizard', icon: Upload },
+  // Reorganized into 5 Primary Functional Groups
+  const navGroups: NavSection[] = [
     {
-      to: '/app/duplicates',
-      label: 'Conflict Review',
-      icon: GitCompare,
-      badge: instScoped ? 'Restricted' : undefined,
+      title: 'Overview',
+      items: [
+        { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        { to: '/app/topology', label: '3D Spatial Topology', icon: Box, badge: 'Live 3D' },
+      ],
     },
-    { to: '/app/intake', label: 'Intake Monitoring', icon: BarChart3 },
-    { to: '/app/institutions', label: 'Institutions', icon: Building2 },
-    { to: '/app/programs', label: 'Programs & Caps', icon: BookOpen },
-    { to: '/app/audit', label: 'Audit Timeline', icon: History },
-    { to: '/app/assistant', label: 'Admin Copilot', icon: MessageSquare },
-    { to: '/app/settings', label: 'Settings & Credentials', icon: Settings },
+    {
+      title: 'Student records',
+      items: [
+        { to: '/app/students', label: 'Student records', icon: Users },
+        { to: '/app/imports', label: 'Import batches', icon: FileSpreadsheet },
+        { to: '/app/imports/new', label: 'Data validation', icon: Upload },
+        {
+          to: '/app/duplicates',
+          label: 'Duplicate review',
+          icon: GitCompare,
+          badge: instScoped ? 'Tenant' : undefined,
+        },
+      ],
+    },
+    {
+      title: 'Oversight',
+      items: [
+        { to: '/app/institutions', label: 'Institutions', icon: Building2 },
+        { to: '/app/programs', label: 'Programs & sanctioned caps', icon: BookOpen },
+        { to: '/app/intake', label: 'Enrolment monitoring', icon: BarChart3 },
+      ],
+    },
+    {
+      title: 'Trust',
+      items: [
+        { to: '/verify/att-2026-901', label: 'Verification', icon: ShieldCheck },
+        { to: '/app/audit', label: 'Audit trail', icon: History },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        { to: '/app/assistant', label: 'WEAVE Assistant', icon: MessageSquare, badge: 'Offline' },
+        { to: '/app/settings', label: 'Help and guidance', icon: Settings },
+      ],
+    },
   ];
 
   return (
@@ -130,7 +171,7 @@ export const AppShell: React.FC = () => {
         className="bg-[#E9E7DF] border-b border-[#DEDDD5] px-4 sm:px-6 py-1.5 text-xs flex flex-wrap items-center justify-between gap-2"
       >
         <div className="flex items-center gap-2 font-mono text-[11px] font-medium text-[#20241F]">
-          <span className="px-1.5 py-0.5 bg-[#244C3A] text-white rounded-xs">
+          <span className="px-1.5 py-0.5 bg-[#181B18] text-[#FAF8F3] border border-[#C5A869]/30 rounded-xs">
             {apiMode === 'mock'
               ? 'MOCK API — NOT REAL DATA'
               : 'SYNTHETIC DATA — DEMONSTRATION ONLY'}
@@ -143,7 +184,7 @@ export const AppShell: React.FC = () => {
         <div className="flex items-center gap-3 text-xs">
           <Link
             to="/verify/att-2026-901"
-            className="inline-flex items-center gap-1 font-mono text-[11px] text-[#244C3A] hover:underline"
+            className="inline-flex items-center gap-1 font-mono text-[11px] text-[#A37C39] hover:text-[#181B18] hover:underline"
           >
             <span>Public Verifier (/verify/att-2026-901)</span>
             <ExternalLink className="w-3 h-3" />
@@ -152,7 +193,7 @@ export const AppShell: React.FC = () => {
       </div>
 
       <div className="flex-1 flex">
-        {/* Desktop Left Sidebar */}
+        {/* Desktop Left Sidebar: 5 Clear Groups */}
         <aside
           aria-label="Workspace Sidebar Navigation"
           className="hidden lg:flex lg:w-64 xl:w-68 flex-col bg-white border-r border-[#DEDDD5] shrink-0"
@@ -164,47 +205,54 @@ export const AppShell: React.FC = () => {
             <span className="font-mono text-[11px] text-[#686B65]">v0.1.0</span>
           </div>
 
-          <div className="p-4 border-b border-[#DEDDD5] bg-[#F7F6F2]/60 space-y-2">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#686B65]">
-              Authenticated Profile
+          <div className="p-3.5 border-b border-[#DEDDD5] bg-[#F7F6F2]/60 space-y-1">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#686B65]">
+              Active Profile
             </div>
             <div className="text-xs font-semibold text-[#20241F] truncate">{user.name}</div>
-            <div className="text-[11px] font-mono text-[#244C3A]">{user.role}</div>
+            <div className="text-[11px] font-mono text-[#0284C7] font-semibold">{user.role}</div>
             {user.institution_id && (
-              <div className="text-[11px] font-mono text-[#686B65] truncate">
+              <div className="text-[10px] font-mono text-[#686B65] truncate">
                 Tenant: {user.institution_id}
               </div>
             )}
           </div>
 
-          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `flex items-center justify-between gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      isActive
-                        ? 'bg-[#244C3A] text-white'
-                        : 'text-[#20241F] hover:bg-[#F0EFE9]'
-                    }`
-                  }
-                >
-                  <span className="flex items-center gap-2.5 truncate">
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </span>
-                  {item.badge && (
-                    <span className="font-mono text-[10px] opacity-75 shrink-0">
-                      {item.badge}
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
+          <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+            {navGroups.map((group) => (
+              <div key={group.title} className="space-y-1">
+                <div className="px-3 pt-1 pb-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-[#686B65]">
+                  {group.title}
+                </div>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[#0F172A] text-white shadow-xs'
+                            : 'text-[#334155] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                        }`
+                      }
+                    >
+                      <span className="flex items-center gap-2.5 truncate">
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </span>
+                      {item.badge && (
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 opacity-90 shrink-0">
+                          {item.badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="p-4 border-t border-[#DEDDD5] space-y-2">
@@ -217,7 +265,7 @@ export const AppShell: React.FC = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-[#20241F] bg-[#F7F6F2] hover:bg-[#E9E7DF] border border-[#DEDDD5] rounded-md transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Switch Account / Sign Out</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </aside>
@@ -256,7 +304,7 @@ export const AppShell: React.FC = () => {
                   id="topbar-role-select"
                   value={user.role}
                   onChange={(e) => switchRolePersona(e.target.value as UserRole, user.institution_id)}
-                  className="px-2.5 py-1.5 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F] focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+                  className="px-2.5 py-1.5 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F] focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
                 >
                   {SYNTHETIC_DEMO_ACCOUNTS.map((acct) => (
                     <option key={acct.role} value={acct.role}>
@@ -275,7 +323,7 @@ export const AppShell: React.FC = () => {
                     id="topbar-tenant-select"
                     value={user.institution_id || 'INST-KKR-101'}
                     onChange={(e) => switchRolePersona(user.role, e.target.value)}
-                    className="px-2.5 py-1.5 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F] focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+                    className="px-2.5 py-1.5 text-xs font-mono bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F] focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
                   >
                     <option value="INST-KKR-101">INST-KKR-101 (NIT Kurukshetra)</option>
                     <option value="INST-DEL-202">INST-DEL-202 (IIET Delhi)</option>
@@ -292,7 +340,7 @@ export const AppShell: React.FC = () => {
               aria-label="Mobile Workspace Navigation"
               className="lg:hidden bg-white border-b border-[#DEDDD5] p-4 grid grid-cols-2 gap-2"
             >
-              {navItems.map((item) => (
+              {navGroups.flatMap((g) => g.items).map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -300,7 +348,7 @@ export const AppShell: React.FC = () => {
                   onClick={() => setMobileNavOpen(false)}
                   className={({ isActive }) =>
                     `px-3 py-2 rounded-md text-xs font-medium ${
-                      isActive ? 'bg-[#244C3A] text-white' : 'bg-[#F7F6F2] text-[#20241F]'
+                      isActive ? 'bg-[#0F172A] text-white' : 'bg-[#F1F5F9] text-[#0F172A]'
                     }`
                   }
                 >
@@ -322,7 +370,7 @@ export const AppShell: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <Link
                   to="/app/imports/new"
-                  className="px-3.5 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md transition-colors whitespace-nowrap"
+                  className="px-3.5 py-2 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] rounded-md transition-colors whitespace-nowrap shadow-sm border border-[#C5A869]/20"
                 >
                   Import CSV Batch
                 </Link>

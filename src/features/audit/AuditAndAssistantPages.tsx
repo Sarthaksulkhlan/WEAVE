@@ -9,15 +9,21 @@ import {
   AlertCircle,
   CheckCircle2,
   Ban,
-  Mic,
-  Square,
   RotateCcw,
-  Cpu,
-  Volume2,
+  Search,
+  BookOpen,
+  Sparkles,
+  HelpCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { weaveApiClient, weaveQueryKeys } from '../../lib/api-client';
 import { VALIDATION_RULES_CATALOG } from '../../lib/weaveEngine';
+import {
+  WEAVE_KNOWLEDGE_BASE,
+  matchKnowledgeIntent,
+  type KnowledgeEntry,
+} from '../../data/weaveKnowledgeBase';
 
 /**
  * 1. /app/audit — Chronological Audit Timeline (Section 14)
@@ -103,7 +109,7 @@ export const AuditTimelinePage: React.FC = () => {
           <button
             type="button"
             onClick={() => setDateFilter('')}
-            className="text-xs text-[#244C3A] underline"
+            className="text-xs text-[#9B7B32] hover:text-[#181B18] underline"
           >
             Clear date
           </button>
@@ -118,7 +124,7 @@ export const AuditTimelinePage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-[#20241F]">{ev.id}</span>
                 <span>·</span>
-                <span className="text-[#244C3A] font-semibold">{ev.action}</span>
+                <span className="text-[#9B7B32] font-semibold">{ev.action}</span>
                 <span>·</span>
                 <span className="text-[#686B65]">
                   Target: {ev.entity_type} ({ev.entity_id})
@@ -172,410 +178,356 @@ export const AuditTimelinePage: React.FC = () => {
   );
 };
 
-// Helper to synthesize a tiny valid WAV base64 buffer for testing gemini-3.5-transcribe in headless environments
-function createSilentWavBase64(durationSec = 0.25): string {
-  const sampleRate = 16000;
-  const numSamples = Math.floor(sampleRate * durationSec);
-  const buffer = new ArrayBuffer(44 + numSamples * 2);
-  const view = new DataView(buffer);
-
-  const writeStr = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + numSamples * 2, true);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, 'data');
-  view.setUint32(40, numSamples * 2, true);
-
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-type GeminiChatModel = 'gemini-3.8-flash' | 'gemini-3.1-flash-lite' | 'gemini-4-argon';
-
-interface ChatThreadMessage {
+interface AssistantChatMessage {
   id: string;
-  role: 'user' | 'model';
+  role: 'user' | 'assistant';
+  query: string;
+  matchedQuestion?: string;
+  categoryLabel?: string;
   text: string;
-  modelUsed?: string;
-  timestamp: string;
+  confidence?: number;
+  followUps?: string[];
   sources?: Array<{ label: string; route: string }>;
+  timestamp: string;
 }
+
+const KNOWLEDGE_CATEGORIES = [
+  { id: 'all', label: 'All Topics' },
+  { id: 'understanding', label: '1. Understanding & SIH' },
+  { id: 'imports', label: '2. Ingestion & CSV' },
+  { id: 'validation', label: '3. Rules (STU-001–006)' },
+  { id: 'duplicates', label: '4. Duplicate Review' },
+  { id: 'intake', label: '5. Approved Intake' },
+  { id: 'verification', label: '6. Verification & Ed25519' },
+  { id: 'security', label: '7. Security & Audit' },
+  { id: 'dashboard', label: '8. Dashboard Guidance' },
+];
 
 /**
- * 2. /app/assistant — Multi-Turn Gemini Institutional Copilot + Audio Transcription (gemini-3.5-transcribe)
+ * 2. /app/assistant — Dedicated Deterministic Rule-Based Knowledge Assistant
+ * Zero LLM APIs, Zero External Keys, 100% Offline Capable
  */
 export const AssistantPage: React.FC = () => {
   const { user } = useAuth();
-  const [selectedModel, setSelectedModel] = useState<GeminiChatModel>('gemini-3.8-flash');
-  const [promptInput, setPromptInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcribeStatus, setTranscribeStatus] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [chatInput, setChatInput] = useState('');
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
-  const [messages, setMessages] = useState<ChatThreadMessage[]>([
+  const [messages, setMessages] = useState<AssistantChatMessage[]>([
     {
-      id: 'msg-welcome',
-      role: 'model',
-      text: `Welcome to the **WEAVE Institutional Compliance & Verification Copilot** (Role scope: \`${user.role}\` · Tenant: \`${user.institution_id || 'AICTE-ALL'}\`).\n\nAsk multi-turn questions about deterministic validation rules (\`STU-001\` through \`STU-006\`), cross-institution APAAR duplicate candidates, or AICTE approved intake caps—or use the microphone to transcribe spoken queries via \`gemini-3.5-transcribe\`.`,
-      modelUsed: 'gemini-3.8-flash',
-      timestamp: 'System Initialized',
-      sources: [
-        { label: 'Batch BAT-2026-003 Validation Results', route: '/app/imports/BAT-2026-003' },
-        { label: 'Duplicate & Conflict Review', route: '/app/duplicates' },
-        { label: '3D Spatial Topology', route: '/app/topology' },
+      id: 'welcome-msg',
+      role: 'assistant',
+      query: 'Initial Initialization',
+      categoryLabel: 'Offline System Knowledge Base',
+      text:
+        `Welcome to the **WEAVE Institutional Knowledge Assistant** for SIH26263.\n\n` +
+        `This assistant is 100% offline-first and rule-based, containing verified documentation on **deterministic validation rules** (STU-001 through STU-006), **cross-institution duplicate reviews**, **AICTE intake monitoring**, and **Ed25519 cryptographic attestations**.\n\n` +
+        `Choose a topic category, search below, or click any suggested question chip to explore.`,
+      confidence: 100,
+      followUps: [
+        'What is WEAVE?',
+        'How does duplicate detection work?',
+        'What is approved intake monitoring?',
+        'What are the 6 student validation rules?',
       ],
+      sources: [
+        { label: 'Validation Ruleset Catalog', route: '/app/audit' },
+        { label: 'Approved Intake Monitoring', route: '/app/intake' },
+        { label: 'Duplicate Review Queue', route: '/app/duplicates' },
+        { label: '3D Spatial Apparatus', route: '/app/topology' },
+      ],
+      timestamp: 'System Ready',
     },
   ]);
-
-  const suggestedPrompts = [
-    'Explain the most common validation issues in batch BAT-2026-003.',
-    'Summarize open cross-institution APAAR duplicate candidates and privacy rules.',
-    'Which programs are approaching or exceeding AICTE approved intake?',
-    'How does rule STU-002 validate sanctioned discipline codes?',
-  ];
-
-  const chatMutation = useMutation({
-    mutationFn: async (nextMessages: Array<{ role: 'user' | 'model'; text: string }>) => {
-      return weaveApiClient.chatWithAssistant({
-        messages: nextMessages,
-        model: selectedModel,
-        role: user.role,
-        institution_id: user.institution_id,
-      });
-    },
-    onSuccess: (res) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-${Date.now()}`,
-          role: 'model',
-          text: res.reply,
-          modelUsed: res.model_used || selectedModel,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          sources: res.sources,
-        },
-      ]);
-    },
-  });
-
-  const transcribeMutation = useMutation({
-    mutationFn: (params: { audioBase64: string; mimeType: string; samplePromptHint?: string }) =>
-      weaveApiClient.transcribeAudio(params),
-    onSuccess: (res) => {
-      setPromptInput(res.transcript);
-      setTranscribeStatus(`Transcribed via ${res.model}`);
-    },
-    onError: () => {
-      setTranscribeStatus('Audio transcription could not be completed.');
-    },
-  });
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages.length]);
 
-  const handleSendMessage = (textToSend: string) => {
-    const clean = textToSend.trim();
-    if (!clean || chatMutation.isPending) return;
+  const handleAskQuestion = (questionText: string) => {
+    const clean = questionText.trim();
+    if (!clean) return;
 
-    const userMsg: ChatThreadMessage = {
-      id: `msg-u-${Date.now()}`,
+    const userMsg: AssistantChatMessage = {
+      id: `u-${Date.now()}`,
       role: 'user',
+      query: clean,
       text: clean,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const updatedThread = [...messages, userMsg];
-    setMessages(updatedThread);
-    setPromptInput('');
-    setTranscribeStatus(null);
+    const matchResult = matchKnowledgeIntent(clean);
+    const matched = matchResult.matchedEntry;
 
-    chatMutation.mutate(
-      updatedThread.map((m) => ({
-        role: m.role,
-        text: m.text,
-      }))
-    );
-  };
+    let responseText = '';
+    let categoryLabel = 'Compliance & Architecture';
+    let followUps: string[] = [];
 
-  const handleToggleMicrophone = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-      return;
+    if (matched) {
+      responseText = matched.answer;
+      categoryLabel = matched.categoryLabel;
+      followUps = matched.followUpQuestions || [];
+    } else {
+      const topRecs = matchResult.suggestedEntries.slice(0, 3);
+      responseText =
+        `I do not have an exact matching rulebook entry for "${clean}".\n\n` +
+        `As an institutional trust system for SIH26263, I answer questions based strictly on curated validation rules, data contracts, and regulatory policies without external hallucination.\n\n` +
+        `**Recommended questions on related topics:**\n` +
+        topRecs.map((r) => `• **${r.canonicalQuestion}**`).join('\n') +
+        `\n\nSelect any suggested topic chip below to view its guidance.`;
+      followUps = topRecs.map((r) => r.canonicalQuestion);
     }
 
-    setTranscribeStatus('Listening via microphone...');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+    const assistantMsg: AssistantChatMessage = {
+      id: `a-${Date.now()}`,
+      role: 'assistant',
+      query: clean,
+      matchedQuestion: matched?.canonicalQuestion,
+      categoryLabel,
+      text: responseText,
+      confidence: matchResult.confidence,
+      followUps,
+      sources: [
+        { label: 'Deterministic Rulebook Catalog', route: '/app/audit' },
+        { label: 'Approved Intake Monitoring', route: '/app/intake' },
+        { label: 'Duplicate & Conflict Review', route: '/app/duplicates' },
+      ],
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setChatInput('');
+  };
 
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = String(reader.result || '');
-          const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : '';
-          if (base64) {
-            setTranscribeStatus('Transcribing with gemini-3.5-transcribe...');
-            transcribeMutation.mutate({
-              audioBase64: base64,
-              mimeType: blob.type || 'audio/webm',
-            });
-          }
-        };
-        reader.readAsDataURL(blob);
-      };
-
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      // Fallback when browser environment has no physical microphone device attached
-      setTranscribeStatus('Transcribing synthetic voice clip via gemini-3.5-transcribe...');
-      transcribeMutation.mutate({
-        audioBase64: createSilentWavBase64(0.25),
-        mimeType: 'audio/wav',
-        samplePromptHint:
-          'Summarize open cross-institution APAAR conflicts and STU-002 validation failures in batch BAT-2026-003.',
-      });
+  // Filtered knowledge entries for the quick exploration panel
+  const displayedEntries = WEAVE_KNOWLEDGE_BASE.filter((entry) => {
+    if (selectedCategory !== 'all' && entry.category !== selectedCategory) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const inQuestion = entry.canonicalQuestion.toLowerCase().includes(q);
+      const inAnswer = entry.answer.toLowerCase().includes(q);
+      const inSynonyms = entry.synonyms.some((s) => s.toLowerCase().includes(q));
+      return inQuestion || inAnswer || inSynonyms;
     }
-  };
-
-  const handleSampleVoiceClip = () => {
-    setTranscribeStatus('Transcribing voice sample via gemini-3.5-transcribe...');
-    transcribeMutation.mutate({
-      audioBase64: createSilentWavBase64(0.25),
-      mimeType: 'audio/wav',
-      samplePromptHint:
-        'Check AICTE approved intake utilization for NIT Kurukshetra BTECH-CSE and explain rule STU-005.',
-    });
-  };
+    return true;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Mandatory Advisory & Permission Disclaimer */}
-      <div className="p-4 bg-[#F0EFE9] border border-[#DEDDD5] rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      {/* Disclaimer Banner: 100% Offline / Deterministic */}
+      <div className="p-4 bg-white border border-[#DEDDD5] rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-4 h-4 text-[#244C3A] shrink-0 mt-0.5" />
+          <ShieldCheck className="w-4 h-4 text-[#9B7B32] shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <div className="font-semibold text-[#20241F]">
-              Multi-Turn Gemini Institutional Copilot &amp; Voice Transcription (`gemini-3.5-transcribe`)
+              WEAVE Deterministic Institutional Assistant (SIH26263)
             </div>
             <p className="text-[#686B65]">
-              Scoped to role `{user.role}`. Strictly read-only advisory output—never modifies
-              records, never unmasks APAAR identifiers, and never overrides deterministic validation
-              rules.
+              Operates 100% locally on curated rulebooks and database schemas. Zero LLM API calls,
+              zero external network tokens, and zero hallucinations.
             </p>
           </div>
         </div>
-
-        {/* Model Selector (gemini-3.8-flash, gemini-3.1-flash-lite, gemini-4-argon) */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Cpu className="w-3.5 h-3.5 text-[#244C3A]" />
-          <label htmlFor="gemini-model-select" className="text-[11px] font-mono text-[#686B65]">
-            Model:
-          </label>
-          <select
-            id="gemini-model-select"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as GeminiChatModel)}
-            className="px-2.5 py-1.5 text-xs font-mono bg-white border border-[#DEDDD5] rounded text-[#20241F]"
-          >
-            <option value="gemini-3.8-flash">gemini-3.8-flash (General Tasks)</option>
-            <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Fast / Low-Latency)</option>
-            <option value="gemini-4-argon">gemini-4-argon (Complex Reasoning)</option>
-          </select>
+        <div className="flex items-center gap-2 shrink-0 font-mono text-[11px] text-[#9B7B32] bg-[#FAF7EF] px-2.5 py-1 rounded border border-[#C5A869]/30">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Offline Knowledge Base ({WEAVE_KNOWLEDGE_BASE.length} Q&amp;As)</span>
         </div>
       </div>
 
-      {/* Multi-turn Chat Container */}
-      <div className="bg-white border border-[#DEDDD5] rounded-md flex flex-col h-[560px]">
-        {/* Header Bar */}
-        <div className="px-5 py-3.5 border-b border-[#DEDDD5] flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-[#20241F]">Conversation Thread</span>
-            <span className="font-mono text-[11px] px-2 py-0.5 bg-[#F7F6F2] border border-[#DEDDD5] rounded text-[#686B65]">
-              {messages.length} message(s) · Active model: {selectedModel}
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Curated Category Explorer (5 cols) */}
+        <div className="lg:col-span-5 bg-white border border-[#DEDDD5] rounded-md p-5 space-y-4">
+          <div className="space-y-1 pb-3 border-b border-[#DEDDD5]">
+            <h3 className="text-sm font-semibold text-[#20241F] flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#9B7B32]" />
+              <span>Browse Knowledge Topics</span>
+            </h3>
+            <p className="text-xs text-[#686B65]">
+              Select a category or search verified questions.
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setMessages(messages.slice(0, 1))}
-            className="inline-flex items-center gap-1 text-xs text-[#686B65] hover:text-[#20241F]"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Thread
-          </button>
-        </div>
 
-        {/* Scrollable Message History */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#F7F6F2]/40">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-            >
-              <div
-                className={`max-w-2xl rounded-md p-4 text-xs space-y-2.5 border ${
-                  msg.role === 'user'
-                    ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                    : 'bg-white text-[#20241F] border-[#DEDDD5]'
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-[#686B65] absolute left-3 top-2.5" />
+            <input
+              type="text"
+              aria-label="Search questions"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by keyword, rule, or topic..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F7F6F2] border border-[#DEDDD5] rounded text-[#20241F] placeholder:text-[#686B65]"
+            />
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {KNOWLEDGE_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors ${
+                  selectedCategory === cat.id
+                    ? 'bg-[#181B18] text-[#FAF8F3] font-medium shadow-xs'
+                    : 'bg-[#F7F6F2] text-[#20241F] border border-[#DEDDD5] hover:bg-[#E9E7DF]'
                 }`}
               >
-                <div className="flex items-center justify-between gap-4 text-[10px] font-mono opacity-80">
-                  <span>
-                    {msg.role === 'user'
-                      ? `${user.name} (${user.role})`
-                      : `WEAVE Copilot · ${msg.modelUsed || selectedModel}`}
-                  </span>
-                  <span>{msg.timestamp}</span>
-                </div>
-
-                <div className="whitespace-pre-line leading-relaxed">{msg.text}</div>
-
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="pt-2 border-t border-[#DEDDD5]/70 flex flex-wrap items-center gap-2.5">
-                    <span className="text-[11px] font-mono text-[#686B65]">Citations:</span>
-                    {msg.sources.map((src) => (
-                      <Link
-                        key={src.route}
-                        to={src.route}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#244C3A] underline hover:text-[#193B2C]"
-                      >
-                        <span>{src.label}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {chatMutation.isPending && (
-            <div className="flex items-start">
-              <div className="bg-white border border-[#DEDDD5] rounded-md px-4 py-3 text-xs text-[#686B65] font-mono">
-                Generating grounded response with {selectedModel}...
-              </div>
-            </div>
-          )}
-          <div ref={threadEndRef} />
-        </div>
-
-        {/* Quick Prompts + Input + Microphone Audio Transcription Bar */}
-        <div className="p-4 border-t border-[#DEDDD5] bg-white space-y-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {suggestedPrompts.map((sp) => (
-              <button
-                key={sp}
-                type="button"
-                onClick={() => handleSendMessage(sp)}
-                disabled={chatMutation.isPending}
-                className="px-2.5 py-1 text-[11px] bg-[#F7F6F2] hover:bg-[#E9E7DF] border border-[#DEDDD5] rounded text-[#20241F] transition-colors text-left"
-              >
-                {sp}
+                {cat.label}
               </button>
             ))}
           </div>
 
-          {transcribeStatus && (
-            <div className="flex items-center justify-between px-3 py-1.5 bg-[#EAF2EE] border border-[#1E563B]/20 rounded text-[11px] font-mono text-[#1E563B]">
-              <span>{transcribeStatus}</span>
-              <button
-                type="button"
-                onClick={() => setTranscribeStatus(null)}
-                className="underline ml-2"
-              >
-                Dismiss
-              </button>
+          {/* List of Clickable Canonical Questions */}
+          <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+            {displayedEntries.length === 0 ? (
+              <div className="p-4 text-center text-xs text-[#686B65] bg-[#F7F6F2] rounded">
+                No matching questions found for "{searchQuery}".
+              </div>
+            ) : (
+              displayedEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => handleAskQuestion(entry.canonicalQuestion)}
+                  className="w-full text-left p-2.5 rounded bg-[#F7F6F2] hover:bg-[#FAF7EF] border border-[#DEDDD5] hover:border-[#C5A869]/50 transition-colors group flex items-start justify-between gap-2 text-xs"
+                >
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] font-mono text-[#9B7B32] uppercase font-semibold">
+                      {entry.categoryLabel}
+                    </div>
+                    <div className="text-[#20241F] font-medium leading-snug group-hover:text-[#9B7B32]">
+                      {entry.canonicalQuestion}
+                    </div>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#686B65] group-hover:text-[#9B7B32] shrink-0 mt-1" />
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Interactive Chat Conversation (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-[#DEDDD5] rounded-md flex flex-col h-[580px]">
+          {/* Thread Header */}
+          <div className="px-5 py-3.5 border-b border-[#DEDDD5] flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#20241F]">Question &amp; Guidance Thread</span>
+              <span className="font-mono text-[10px] px-2 py-0.5 bg-[#F7F6F2] border border-[#DEDDD5] rounded text-[#686B65]">
+                {messages.length} item(s)
+              </span>
             </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage(promptInput);
-            }}
-            className="flex flex-wrap sm:flex-nowrap items-center gap-2"
-          >
-            <input
-              type="text"
-              aria-label="Ask a multi-turn question or transcribe voice audio"
-              value={promptInput}
-              onChange={(e) => setPromptInput(e.target.value)}
-              placeholder="Ask a follow-up question or click Record Mic to transcribe with gemini-3.5-transcribe..."
-              className="flex-1 px-3 py-2 text-xs bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F]"
-            />
-
             <button
               type="button"
-              onClick={handleToggleMicrophone}
-              disabled={transcribeMutation.isPending}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border transition-colors ${
-                isRecording
-                  ? 'bg-[#99322B] text-white border-[#99322B]'
-                  : 'bg-[#F7F6F2] text-[#20241F] border-[#DEDDD5] hover:bg-[#E9E7DF]'
-              }`}
-              title="Record microphone audio and transcribe using gemini-3.5-transcribe"
+              onClick={() => setMessages(messages.slice(0, 1))}
+              className="inline-flex items-center gap-1 text-xs text-[#686B65] hover:text-[#20241F]"
             >
-              {isRecording ? (
-                <>
-                  <Square className="w-3.5 h-3.5" />
-                  <span>Stop Mic</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="w-3.5 h-3.5 text-[#244C3A]" />
-                  <span>{transcribeMutation.isPending ? 'Transcribing...' : 'Record Mic'}</span>
-                </>
-              )}
+              <RotateCcw className="w-3.5 h-3.5" /> Reset Thread
             </button>
+          </div>
 
-            <button
-              type="button"
-              onClick={handleSampleVoiceClip}
-              disabled={transcribeMutation.isPending}
-              className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-mono text-[#686B65] bg-[#F7F6F2] hover:text-[#20241F] border border-[#DEDDD5] rounded-md"
-              title="Test gemini-3.5-transcribe with a synthetic audio buffer"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-[#244C3A]" />
-              <span className="hidden md:inline">Voice Sample</span>
-            </button>
+          {/* Scrollable Conversation Stream */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#F7F6F2]/40">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              >
+                <div
+                  className={`max-w-2xl rounded-md p-4 text-xs space-y-2.5 border shadow-xs ${
+                    msg.role === 'user'
+                      ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
+                      : 'bg-white text-[#20241F] border-[#DEDDD5]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4 text-[10px] font-mono opacity-80">
+                    <span>
+                      {msg.role === 'user'
+                        ? `${user.name} (${user.role})`
+                        : `WEAVE Knowledge · ${msg.categoryLabel || 'Rulebook'}`}
+                    </span>
+                    <span>{msg.timestamp}</span>
+                  </div>
 
-            <button
-              type="submit"
-              disabled={chatMutation.isPending || !promptInput.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-50 rounded-md"
+                  {msg.matchedQuestion && msg.role === 'assistant' && (
+                    <div className="p-2 bg-[#F7F6F2] rounded border border-[#DEDDD5]/70 text-[11px] font-medium text-[#9B7B32]">
+                      Matched: {msg.matchedQuestion} (Confidence: {msg.confidence}%)
+                    </div>
+                  )}
+
+                  <div className="whitespace-pre-line leading-relaxed">{msg.text}</div>
+
+                  {/* Follow-up Questions as Clickable Chips */}
+                  {msg.followUps && msg.followUps.length > 0 && (
+                    <div className="pt-2 border-t border-[#DEDDD5]/70 space-y-1.5">
+                      <span className="text-[10px] font-mono text-[#686B65] uppercase">
+                        Related Questions:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {msg.followUps.map((fq) => (
+                          <button
+                            key={fq}
+                            type="button"
+                            onClick={() => handleAskQuestion(fq)}
+                            className="px-2 py-0.5 rounded text-[11px] bg-[#F7F6F2] hover:bg-[#E9E7DF] border border-[#DEDDD5] text-[#20241F] text-left transition-colors"
+                          >
+                            {fq}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sources / Citations */}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="pt-2 border-t border-[#DEDDD5]/70 flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="font-mono text-[#686B65]">Citations:</span>
+                      {msg.sources.map((src) => (
+                        <Link
+                          key={src.route}
+                          to={src.route}
+                          className="inline-flex items-center gap-1 font-medium text-[#9B7B32] underline hover:text-[#181B18]"
+                        >
+                          <span>{src.label}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={threadEndRef} />
+          </div>
+
+          {/* Ask Input Form */}
+          <div className="p-4 border-t border-[#DEDDD5] bg-white">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAskQuestion(chatInput);
+              }}
+              className="flex items-center gap-2"
             >
-              <Send className="w-3.5 h-3.5" />
-              <span>Send</span>
-            </button>
-          </form>
+              <input
+                type="text"
+                aria-label="Ask a question about WEAVE"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type your question (e.g. 'How does rule STU-005 detect conflicts?')..."
+                className="flex-1 px-3 py-2 text-xs bg-[#F7F6F2] border border-[#DEDDD5] rounded-md text-[#20241F] focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-50 rounded-md transition-colors shadow-sm"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Ask</span>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -655,11 +607,11 @@ export const SettingsPage: React.FC = () => {
           </div>
           <div className="p-3 bg-[#F7F6F2] border border-[#DEDDD5] rounded-sm">
             <div className="text-[#686B65]">Role Authority</div>
-            <div className="font-semibold text-[#244C3A] mt-0.5">{user.role}</div>
+            <div className="font-semibold text-[#9B7B32] mt-0.5">{user.role}</div>
           </div>
           <div className="p-3 bg-[#F7F6F2] border border-[#DEDDD5] rounded-sm">
             <div className="text-[#686B65]">Token Storage</div>
-            <div className="font-semibold text-[#1E563B] mt-0.5">
+            <div className="font-semibold text-[#1E6B45] mt-0.5">
               In-Memory Only (Zero WebStorage)
             </div>
           </div>
@@ -672,7 +624,7 @@ export const SettingsPage: React.FC = () => {
             onClick={() => setApiMode('live')}
             className={`px-3 py-1.5 rounded-sm border ${
               apiMode === 'live'
-                ? 'bg-[#244C3A] text-white border-[#244C3A]'
+                ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
                 : 'bg-[#F7F6F2] text-[#20241F] border-[#DEDDD5]'
             }`}
           >
@@ -683,7 +635,7 @@ export const SettingsPage: React.FC = () => {
             onClick={() => setApiMode('mock')}
             className={`px-3 py-1.5 rounded-sm border ${
               apiMode === 'mock'
-                ? 'bg-[#244C3A] text-white border-[#244C3A]'
+                ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
                 : 'bg-[#F7F6F2] text-[#20241F] border-[#DEDDD5]'
             }`}
           >
@@ -761,7 +713,7 @@ export const SettingsPage: React.FC = () => {
             <button
               type="submit"
               disabled={issueMutation.isPending || user.role === 'auditor'}
-              className="w-full py-2 px-3 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-45 rounded-md"
+              className="w-full py-2 px-3 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-45 rounded-md shadow-sm transition-colors"
             >
               Issue Token
             </button>
@@ -785,7 +737,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="flex items-center gap-3 font-mono shrink-0">
                 {att.status === 'ACTIVE' ? (
-                  <span className="inline-flex items-center gap-1 text-[#1E563B]">
+                  <span className="inline-flex items-center gap-1 text-[#1E6B45]">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>ACTIVE</span>
                   </span>
@@ -798,7 +750,7 @@ export const SettingsPage: React.FC = () => {
 
                 <Link
                   to={`/verify/${att.id.toLowerCase()}`}
-                  className="text-[#244C3A] underline font-sans font-medium"
+                  className="text-[#9B7B32] hover:text-[#181B18] underline font-sans font-medium"
                 >
                   Open Public Verifier
                 </Link>

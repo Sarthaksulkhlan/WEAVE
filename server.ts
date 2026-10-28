@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import {
   VALIDATION_RULES_CATALOG,
   parseStudentCsv,
@@ -22,22 +21,13 @@ import {
   createInitialWeaveState,
   SYNTHETIC_DEMO_ACCOUNTS,
 } from './src/lib/syntheticSeed';
+import {
+  matchKnowledgeIntent,
+  WEAVE_KNOWLEDGE_BASE,
+} from './src/data/weaveKnowledgeBase';
 
 const PORT = 3000;
 const state = createInitialWeaveState();
-
-function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || !apiKey.trim()) return null;
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
-}
 
 function appendAuditEvent(params: {
   institution_id: string;
@@ -1014,41 +1004,20 @@ async function startServer() {
     });
   });
 
-  // Multi-turn Gemini Chat Endpoint (/api/v1/assistant/chat)
-  // Supports gemini-4-argon (complex reasoning), gemini-3.8-flash (general tasks), and gemini-3.1-flash-lite (fast responses)
-  app.post('/api/v1/assistant/chat', async (req, res) => {
+  // Deterministic Offline WEAVE Assistant Endpoint (/api/v1/assistant/chat)
+  // 100% offline-capable, rule-based matching with zero LLM API / external key dependencies.
+  app.post('/api/v1/assistant/chat', (req, res) => {
     const {
       messages = [],
-      model = 'gemini-3.8-flash',
       role = 'institution_operator',
       institution_id = 'INST-KKR-101',
     } = req.body || {};
 
-    const allowedModels = ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
-    const selectedModel = allowedModels.includes(model) ? model : 'gemini-3.8-flash';
-
     const instScoped = isInstitutionScopedRole(role as RolePersona);
-    const scopedInsts = instScoped
-      ? state.institutions.filter((i) => i.id === institution_id)
-      : state.institutions;
     const scopedBatches = instScoped
       ? state.batches.filter((b) => b.institution_id === institution_id)
       : state.batches;
     const latestBatch = scopedBatches[0] || state.batches[0];
-    const openConflictsCount = state.conflicts.filter((c) => c.status === 'OPEN').length;
-
-    const systemInstruction = [
-      'You are the WEAVE Institutional Compliance & Verification Copilot for Smart India Hackathon problem statement SIH26263.',
-      'Your role is strictly read-only, grounded in deterministic validation rules (Ruleset 2026.10.v1: STU-001 APAAR format, STU-002 sanctioned AICTE program code, STU-003 academic age window, STU-004 intra-batch uniqueness, STU-005 cross-institution APAAR hash collision, STU-006 approved intake cap, RULE-CONSENT-CHK consent verification).',
-      'Privacy & Security Guardrails (RULEBOOK.md):',
-      '- Never expose full 12-digit APAAR identifiers; always reference masked form ****-****-XXXX.',
-      '- Never claim live government integration with APAAR, DigiLocker, or AICTE; all data is synthetic demonstration data.',
-      `- Current user role: ${role} (Tenant scope: ${instScoped ? institution_id : 'Cross-institution AICTE regulatory scope'}).`,
-      `- Latest batch in scope: ${latestBatch.id} (${latestBatch.filename}) with ${latestBatch.passed_rows}/${latestBatch.total_rows} passed, ${latestBatch.flagged_rows} flagged, ${latestBatch.failed_rows} failed.`,
-      `- Open cross-institution conflict candidates: ${openConflictsCount}.`,
-      `- Authorized institutions in scope: ${scopedInsts.map((i) => `${i.id} (${i.name})`).join(', ')}.`,
-      'Keep responses concise, structured, and cite relevant WEAVE routes (/app/imports, /app/duplicates, /app/intake, /app/audit) where helpful.',
-    ].join('\n');
 
     const normalizedMessages: Array<{ role: 'user' | 'model'; text: string }> = Array.isArray(messages)
       ? messages
@@ -1062,161 +1031,57 @@ async function startServer() {
     const lastUserMessage =
       normalizedMessages.length > 0
         ? normalizedMessages[normalizedMessages.length - 1].text
-        : 'Summarize the current WEAVE validation and intake status.';
+        : 'What is WEAVE?';
 
-    const priorHistory = normalizedMessages.slice(0, -1).map((m) => ({
-      role: m.role,
-      parts: [{ text: m.text }],
-    }));
+    // Match intent from curated knowledge base
+    const match = matchKnowledgeIntent(lastUserMessage);
+    const matchedEntry = match.matchedEntry;
 
-    const ai = getGeminiClient();
-    if (ai) {
-      const modelsToTry =
-        selectedModel === 'gemini-4-argon'
-          ? ['gemini-4-argon', 'gemini-3.8-flash']
-          : [selectedModel];
+    let reply = '';
+    let followUps: string[] = [];
 
-      for (const candidateModel of modelsToTry) {
-        try {
-          const chat = ai.chats.create({
-            model: candidateModel,
-            history: priorHistory,
-            config: {
-              systemInstruction,
-            },
-          });
-          const response: GenerateContentResponse = await chat.sendMessage({
-            message: lastUserMessage,
-          });
-          const replyText = response.text || 'No response text generated.';
-          res.json({
-            environment: 'SYNTHETIC',
-            advisory_only: true,
-            model_used: candidateModel,
-            requested_model: selectedModel,
-            reply: replyText,
-            sources: [
-              { label: `Batch ${latestBatch.id} Results`, route: `/app/imports/${latestBatch.id}` },
-              { label: 'Duplicate & Conflict Review', route: '/app/duplicates' },
-              { label: 'Approved Intake Monitoring', route: '/app/intake' },
-            ],
-          });
-          return;
-        } catch (err) {
-          // If gemini-4-argon fails due to free-tier key, continue loop to fallback to gemini-3.8-flash
-          if (candidateModel === modelsToTry[modelsToTry.length - 1]) {
-            console.warn(`Gemini API call fallback triggered for ${candidateModel}:`, err);
-          }
-        }
-      }
-    }
-
-    // Deterministic grounded response when offline or no API key is configured
-    const lower = lastUserMessage.toLowerCase();
-    let deterministicReply = `**Grounded Operational Summary (${selectedModel} · Role \`${role}\`):**\n\n`;
-    if (lower.includes('conflict') || lower.includes('duplicate') || lower.includes('stu-005')) {
-      deterministicReply +=
-        `- **Cross-Institution Conflict Queue:** There are currently **${openConflictsCount}** open candidate(s) flagged by rule \`STU-005 (RULE-CROSS-INST)\`.\n` +
-        `- **Candidate CNF-2026-019 (\`****-****-8472\`):** Identical salted SHA-256 APAAR digest detected across two full-time \`BTECH-CSE\` rosters in AY 2026–27.\n` +
-        `- **Privacy Boundary:** ${
-          instScoped
-            ? 'Because your active session is institution-scoped, counterpart institution names are redacted (`INST-REDACTED`). Switch to `regulator_officer` to adjudicate.'
-            : 'Your regulator session has full visibility to inspect both institutions and record an audited resolution note.'
-        }`;
-    } else if (lower.includes('intake') || lower.includes('cap') || lower.includes('seat')) {
-      const progSummary = scopedInsts
-        .flatMap((inst) =>
-          inst.programs.map(
-            (p) =>
-              `• \`${inst.id} · ${p.program_code}\`: **${p.enrolled_verified}/${p.approved_intake}** verified (${Math.round(
-                (p.enrolled_verified / p.approved_intake) * 100
-              )}%)`
-          )
-        )
-        .slice(0, 5)
-        .join('\n');
-      deterministicReply +=
-        `- **AICTE Sanctioned Intake vs. Enrolment (\`STU-006\`):**\n${progSummary}\n` +
-        `- **Governance Rule:** Any batch commit that pushes verified enrolment past 100% of sanctioned capacity is blocked unless a regulator-approved supernumerary exemption is attached.`;
+    if (matchedEntry) {
+      reply = matchedEntry.answer;
+      followUps = matchedEntry.followUpQuestions || [];
     } else {
-      deterministicReply +=
-        `- **Latest Ingestion Batch (\`${latestBatch.id}\`):** Processed **${latestBatch.total_rows}** synthetic rows (**${latestBatch.passed_rows}** verified, **${latestBatch.flagged_rows}** flagged, **${latestBatch.failed_rows}** failed under Ruleset \`2026.10.v1\`).\n` +
-        `- **Primary Rule Diagnostics:** Row \`STU-2026-105\` failed \`STU-002 (RULE-PROG-CODE)\` due to unapproved discipline code \`BTECH-ASTRO\`; Row \`STU-2026-103\` triggered \`STU-005\` cross-institution duplicate review.\n` +
-        `- **Audit Chain Integrity:** All **${state.auditEvents.length}** SHA-256 hash-chained events and Ed25519 attestations are verified.`;
+      // Fallback message recommending similar topics
+      const suggestions = match.suggestedEntries.slice(0, 3);
+      reply =
+        `I don't have a direct rulebook answer for "${lastUserMessage}".\n\n` +
+        `As an institutional trust system for SIH26263, I operate strictly on curated compliance, validation, and governance rules without external generative models.\n\n` +
+        `**Here are recommended topics you can explore:**\n` +
+        suggestions.map((s) => `• **${s.canonicalQuestion}**`).join('\n') +
+        `\n\nYou can also browse categories or select a suggested topic below.`;
+      followUps = suggestions.map((s) => s.canonicalQuestion);
     }
 
     res.json({
       environment: 'SYNTHETIC',
       advisory_only: true,
-      model_used: selectedModel,
-      requested_model: selectedModel,
-      reply: deterministicReply,
+      model_used: 'deterministic-knowledge-base',
+      requested_model: 'offline-ruleset-v2026.10',
+      confidence: match.confidence,
+      matched_question: matchedEntry?.canonicalQuestion || null,
+      reply,
+      follow_up_questions: followUps,
       sources: [
         { label: `Batch ${latestBatch.id} Results`, route: `/app/imports/${latestBatch.id}` },
         { label: 'Duplicate & Conflict Review', route: '/app/duplicates' },
         { label: 'Approved Intake Monitoring', route: '/app/intake' },
-        { label: '3D Spatial Topology', route: '/app/topology' },
+        { label: 'Audit Timeline', route: '/app/audit' },
       ],
     });
   });
 
-  // Audio Transcription Endpoint (/api/v1/assistant/transcribe) using gemini-3.5-transcribe
-  app.post('/api/v1/assistant/transcribe', async (req, res) => {
-    const reqId = `req_${Date.now().toString(36)}`;
-    const { audioBase64 = '', mimeType = 'audio/webm', samplePromptHint = '' } = req.body || {};
-
-    if (!audioBase64 || typeof audioBase64 !== 'string') {
-      res.status(400).json(
-        createApiError(
-          'AUDIO_REQUIRED',
-          'Provide base64-encoded audio data for gemini-3.5-transcribe.',
-          reqId
-        )
-      );
-      return;
-    }
-
-    const ai = getGeminiClient();
-    if (ai) {
-      try {
-        const audioPart = {
-          inlineData: {
-            mimeType: String(mimeType || 'audio/webm'),
-            data: audioBase64,
-          },
-        };
-        const response: GenerateContentResponse = await ai.models.generateContent({
-          model: 'gemini-3.5-transcribe',
-          contents: {
-            parts: [
-              audioPart,
-              {
-                text: 'Transcribe this audio accurately. If it mentions WEAVE rule codes (STU-001 to STU-006), APAAR IDs, or AICTE intake, preserve the exact technical terms.',
-              },
-            ],
-          },
-        });
-        const transcript = (response.text || '').trim();
-        res.json({
-          environment: 'SYNTHETIC',
-          model: 'gemini-3.5-transcribe',
-          transcript:
-            transcript ||
-            samplePromptHint ||
-            'Summarize open cross-institution APAAR conflicts and STU-002 validation failures in batch BAT-2026-003.',
-        });
-        return;
-      } catch (err) {
-        console.warn('gemini-3.5-transcribe fallback triggered:', err);
-      }
-    }
-
+  // Offline Voice / Text Query Dispatcher (/api/v1/assistant/transcribe)
+  app.post('/api/v1/assistant/transcribe', (req, res) => {
+    const { samplePromptHint = '' } = req.body || {};
     res.json({
       environment: 'SYNTHETIC',
-      model: 'gemini-3.5-transcribe',
+      model: 'offline-deterministic',
       transcript:
         samplePromptHint ||
-        'Summarize open cross-institution APAAR conflicts and STU-002 validation failures in batch BAT-2026-003.',
+        'How does WEAVE detect cross-institution duplicate enrolments?',
     });
   });
 

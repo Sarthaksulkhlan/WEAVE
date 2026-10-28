@@ -123,7 +123,7 @@ export const StudentsPage: React.FC = () => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#244C3A]"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F7F6F2] border border-[#DEDDD5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#C5A869]"
           />
         </div>
 
@@ -277,7 +277,7 @@ export const StudentsPage: React.FC = () => {
                           setYearFilter('ALL');
                           setStatusFilter('ALL');
                         }}
-                        className="mt-2 px-3 py-1.5 text-xs font-medium text-[#244C3A] underline"
+                        className="mt-2 px-3 py-1.5 text-xs font-medium text-[#9B7B32] hover:text-[#181B18] underline"
                       >
                         Reset all filters
                       </button>
@@ -384,7 +384,7 @@ export const StudentsPage: React.FC = () => {
                   <dd>
                     <Link
                       to={`/app/imports/${selectedStudent.batch_id}`}
-                      className="text-[#244C3A] underline"
+                      className="text-[#9B7B32] hover:text-[#181B18] underline"
                     >
                       {selectedStudent.batch_id}
                     </Link>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -12,18 +12,42 @@ import {
   Box,
   Play,
   Pause,
+  MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 import { WeaveLogo } from '../../components/ui/WeaveLogo';
 import { WeaveSpatialScene } from '../spatial/WeaveSpatialScene';
+import { HeroBackgroundCanvas } from './components/HeroBackgroundCanvas';
+import { LivePipelineStrata } from './components/LivePipelineStrata';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeWorkspacePreview, setActiveWorkspacePreview] = useState<
     'institution' | 'regulator' | 'verification'
   >('institution');
-  const [heroViewMode, setHeroViewMode] = useState<'editorial' | '3d'>('editorial');
+
+  // Hero Experience: Defaults to 3D apparatus, alternates every 10 seconds with Live Pipeline
+  const [heroViewMode, setHeroViewMode] = useState<'3d' | 'editorial'>('3d');
+  const [autoAlternate, setAutoAlternate] = useState<boolean>(true);
   const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
   const [pipelinePlaying, setPipelinePlaying] = useState<boolean>(true);
+  const lastUserSwitchRef = useRef<number>(Date.now());
+
+  // 10-Second Automatic Alternating Hero Loop
+  useEffect(() => {
+    if (!autoAlternate) return;
+    const interval = window.setInterval(() => {
+      const idleMs = Date.now() - lastUserSwitchRef.current;
+      if (idleMs < 9000) return; // User manually interacted recently
+      setHeroViewMode((prev) => (prev === '3d' ? 'editorial' : '3d'));
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [autoAlternate]);
+
+  const handleModeSwitch = (mode: '3d' | 'editorial') => {
+    lastUserSwitchRef.current = Date.now();
+    setHeroViewMode(mode);
+  };
 
   useEffect(() => {
     if (!pipelinePlaying || heroViewMode !== 'editorial') return;
@@ -36,46 +60,56 @@ export const LandingPage: React.FC = () => {
   }, [pipelinePlaying, heroViewMode]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F6F2] text-[#20241F]">
-      {/* Top Bar Contract: 3 Zones separated by gap-8 */}
-      <header className="sticky top-0 z-30 bg-[#F7F6F2]/95 backdrop-blur-xs border-b border-[#DEDDD5]">
+    <div className="min-h-screen flex flex-col bg-[#F5F1E8] text-[#302F29]">
+      {/* Top Bar: Institutional Navigation */}
+      <header className="sticky top-0 z-40 bg-[#FFFDF8]/90 backdrop-blur-md border-b border-[#E4DED2] text-[#302F29]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
-          <Link to="/" aria-label="WEAVE Home" className="shrink-0">
+          <Link to="/" aria-label="WEAVE Home" className="shrink-0 flex items-center gap-3">
             <WeaveLogo />
+            <span className="hidden sm:inline-block font-mono text-[10px] tracking-widest uppercase text-[#85866B] border-l border-[#E4DED2] pl-3">
+              SIH26263
+            </span>
           </Link>
 
           <nav
             aria-label="Public Navigation"
-            className="hidden md:flex items-center gap-8 text-sm font-medium text-[#686B65]"
+            className="hidden md:flex items-center gap-7 text-xs font-medium text-[#77746B]"
           >
             <a
               href="#product"
-              className="hover:text-[#20241F] transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
-              Product
+              Platform Overview
             </a>
             <a
               href="#how-it-works"
-              className="hover:text-[#20241F] transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
               How it works
             </a>
             <a
               href="#trust-security"
-              className="hover:text-[#20241F] transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
-              Trust &amp; Security
+              Security &amp; Trust
             </a>
             <Link
+              to="/app/assistant"
+              className="inline-flex items-center gap-1.5 text-[#85866B] hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0 font-medium"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>WEAVE Assistant</span>
+            </Link>
+            <Link
               to="/app/topology"
-              className="inline-flex items-center gap-1.5 text-[#244C3A] hover:text-[#193B2C] transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 text-[#77746B] hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
               <Box className="w-3.5 h-3.5" />
               <span>3D Topology</span>
             </Link>
             <Link
               to="/login"
-              className="hover:text-[#20241F] transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
               Sign in
             </Link>
@@ -84,7 +118,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex items-center gap-4 shrink-0">
             <Link
               to="/app"
-              className="px-4 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md transition-colors whitespace-nowrap shrink-0"
+              className="px-4 py-2 text-xs font-semibold text-[#FFFDF8] bg-[#302F29] hover:bg-[#414B38] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm"
             >
               Open workspace
             </Link>
@@ -93,406 +127,179 @@ export const LandingPage: React.FC = () => {
       </header>
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="max-w-6xl mx-auto px-6 py-16 lg:py-24 border-b border-[#DEDDD5]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-            {/* Left Column: Editorial Headline & Actions */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="text-xs font-mono font-medium tracking-widest uppercase text-[#244C3A]">
-                ACADEMIC IDENTITY INFRASTRUCTURE
-              </div>
+        {/* Light Cream Minimal Editorial Hero Section with Subtle Background Canvas */}
+        <section className="relative bg-[#F5F1E8] text-[#302F29] border-b border-[#E4DED2] overflow-hidden py-14 lg:py-20">
+          <HeroBackgroundCanvas />
 
-              <h1
-                className="font-display font-bold text-[#20241F] tracking-tight leading-[1.08]"
-                style={{ fontSize: 'clamp(2.25rem, 3.8vw, 3.5rem)', textWrap: 'balance' }}
-              >
-                Academic records. Connected by trust.
-              </h1>
-
-              <p className="text-base sm:text-lg text-[#686B65] leading-relaxed max-w-xl">
-                WEAVE helps educational institutions validate student records, identify enrolment
-                conflicts and make authorized academic verification more transparent.
-              </p>
-
-              <div className="pt-2 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigate('/app')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md transition-colors whitespace-nowrap shrink-0"
-                >
-                  <span>Explore the platform</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <Link
-                  to="/login"
-                  className="px-5 py-2.5 text-sm font-medium text-[#20241F] bg-white border border-[#DEDDD5] hover:bg-[#F0EFE9] rounded-md transition-colors whitespace-nowrap shrink-0"
-                >
-                  Sign in to workspace
-                </Link>
-                <Link
-                  to="/app/topology"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#244C3A] bg-[#EAF2EE] border border-[#244C3A]/30 hover:bg-[#dcebe3] rounded-md transition-colors whitespace-nowrap shrink-0"
-                >
-                  <Box className="w-4 h-4" />
-                  <span>Launch 3D Vault</span>
-                </Link>
-              </div>
-
-              <div className="pt-4 border-t border-[#DEDDD5] text-xs text-[#686B65] flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>SIH26263 Reference Architecture</span>
-                <span aria-hidden="true">·</span>
-                <span>Masked APAAR Storage</span>
-                <span aria-hidden="true">·</span>
-                <span>Deterministic Rule Engine</span>
-              </div>
-            </div>
-
-            {/* Right Column: Live Editorial Record-Flow Visualization + 3D Apparatus Switcher */}
-            <div className="lg:col-span-6">
-              <div className="mb-2.5 flex items-center justify-between gap-2">
-                <div className="inline-flex items-center p-0.5 bg-[#E9E7DF] border border-[#DEDDD5] rounded-md text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setHeroViewMode('editorial')}
-                    className={`px-3 py-1 rounded-xs font-medium transition-colors ${
-                      heroViewMode === 'editorial'
-                        ? 'bg-white text-[#20241F] shadow-2xs'
-                        : 'text-[#686B65] hover:text-[#20241F]'
-                    }`}
-                  >
-                    Live Pipeline Schematic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHeroViewMode('3d')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xs font-medium transition-colors ${
-                      heroViewMode === '3d'
-                        ? 'bg-[#244C3A] text-white shadow-2xs'
-                        : 'text-[#686B65] hover:text-[#20241F]'
-                    }`}
-                  >
-                    <Box className="w-3.5 h-3.5" />
-                    <span>Interactive 3D Apparatus</span>
-                  </button>
+          <div className="relative z-10 max-w-6xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              {/* Left Column: Hero Editorial Headline & CTAs */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FFFDF8] border border-[#E4DED2] text-[#85866B] text-[11px] font-mono uppercase tracking-widest shadow-2xs">
+                  <Sparkles className="w-3 h-3 text-[#85866B]" />
+                  <span>ACADEMIC RECORDS · INSTITUTIONAL TRUST</span>
                 </div>
 
-                {heroViewMode === 'editorial' && (
+                <h1
+                  className="font-display font-bold text-[#302F29] tracking-tight leading-[1.08]"
+                  style={{ fontSize: 'clamp(2.25rem, 3.8vw, 3.4rem)', textWrap: 'balance' }}
+                >
+                  Every academic record. A clearer path to trust.
+                </h1>
+
+                <p className="text-base sm:text-lg text-[#77746B] leading-relaxed max-w-xl">
+                  Bring student records, validation, enrolment oversight and authorized verification
+                  into one coherent platform.
+                </p>
+
+                {/* Primary CTAs */}
+                <div className="pt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setPipelinePlaying((p) => !p)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono text-[#686B65] hover:text-[#20241F] bg-white border border-[#DEDDD5] rounded-sm"
+                    onClick={() => navigate('/app')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#FFFDF8] bg-[#302F29] hover:bg-[#414B38] rounded-md transition-all whitespace-nowrap shrink-0 shadow-sm"
                   >
-                    {pipelinePlaying ? (
-                      <>
-                        <Pause className="w-3 h-3 text-[#244C3A]" /> Pause Cycle
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3 h-3 text-[#244C3A]" /> Play Cycle
-                      </>
-                    )}
+                    <span>Explore WEAVE</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
-                )}
+                  <Link
+                    to="/app"
+                    className="px-5 py-2.5 text-sm font-medium text-[#302F29] bg-[#FFFDF8] border border-[#E4DED2] hover:bg-[#FAF8F3] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+                  >
+                    Open workspace
+                  </Link>
+                  <Link
+                    to="/app/assistant"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#85866B] bg-[#FFFDF8] border border-[#E4DED2] hover:border-[#85866B] hover:bg-[#FAF8F3] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Ask Assistant</span>
+                  </Link>
+                </div>
+
+                {/* Institutional Trust Badges */}
+                <div className="pt-4 border-t border-[#E4DED2] text-xs text-[#77746B] flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
+                  <span>SIH26263 Reference Implementation</span>
+                  <span aria-hidden="true" className="text-[#85866B]">·</span>
+                  <span>Masked APAAR Storage</span>
+                  <span aria-hidden="true" className="text-[#85866B]">·</span>
+                  <span>Deterministic Rule Engine</span>
+                </div>
               </div>
 
-              {heroViewMode === '3d' ? (
-                <WeaveSpatialScene embedded />
-              ) : (
-                <div
-                  className="bg-white border border-[#DEDDD5] rounded-md p-6 relative overflow-hidden"
-                  aria-label="Illustrative diagram of academic records moving through deterministic validation stages"
-                >
-                  {/* Header Caption */}
-                  <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#DEDDD5] text-xs">
-                    <span className="font-medium text-[#20241F]">
-                      Deterministic Record Verification Pipeline
-                    </span>
-                    <span className="font-mono text-[11px] text-[#686B65]">
-                      Illustrative example · Synthetic data
-                    </span>
+              {/* Right Column: 10-Second Alternating Visualization Container */}
+              <div className="lg:col-span-7">
+                {/* Switcher Bar with 10s Timer Indicator */}
+                <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                  <div className="inline-flex items-center p-0.5 bg-[#FFFDF8] border border-[#E4DED2] rounded-md text-xs shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch('3d')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-medium transition-colors ${
+                        heroViewMode === '3d'
+                          ? 'bg-[#302F29] text-[#FFFDF8] font-semibold shadow-xs'
+                          : 'text-[#77746B] hover:text-[#302F29]'
+                      }`}
+                    >
+                      <Box className="w-3.5 h-3.5" />
+                      <span>Interactive 3D Apparatus</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch('editorial')}
+                      className={`px-3 py-1.5 rounded font-medium transition-colors ${
+                        heroViewMode === 'editorial'
+                          ? 'bg-[#302F29] text-[#FFFDF8] font-semibold shadow-xs'
+                          : 'text-[#77746B] hover:text-[#302F29]'
+                      }`}
+                    >
+                      Live Pipeline Schematic
+                    </button>
                   </div>
 
-                  {/* Animated SVG Telemetry Header Strip */}
-                  <div className="mb-5 p-3 bg-[#F7F6F2] border border-[#DEDDD5] rounded-sm">
-                    <svg
-                      viewBox="0 0 480 42"
-                      className="w-full h-10 overflow-visible"
-                      aria-hidden="true"
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAutoAlternate((prev) => !prev)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono text-[#77746B] hover:text-[#302F29] bg-[#FFFDF8] border border-[#E4DED2] rounded shadow-2xs transition-colors"
+                      title="Pause or resume the 10-second automatic view alternation"
                     >
-                      {/* Base Track */}
-                      <line
-                        x1="28"
-                        y1="21"
-                        x2="452"
-                        y2="21"
-                        stroke="#DEDDD5"
-                        strokeWidth="2"
-                        strokeDasharray="4 4"
-                      />
-                      {/* Active Progress Track */}
-                      <line
-                        x1="28"
-                        y1="21"
-                        x2={28 + (activeStageIdx / 3) * 424}
-                        y2="21"
-                        stroke="#244C3A"
-                        strokeWidth="2.5"
-                        style={{ transition: 'x2 600ms cubic-bezier(0.22, 1, 0.36, 1)' }}
-                      />
-                      {/* 4 Stage Nodes */}
-                      {[
-                        { x: 28, code: '01 INGEST' },
-                        { x: 169, code: '02 VALIDATE' },
-                        { x: 310, code: '03 REVIEW' },
-                        { x: 452, code: '04 ATTEST' },
-                      ].map((pt, i) => {
-                        const isReached = i <= activeStageIdx;
-                        const isCurrent = i === activeStageIdx;
-                        return (
-                          <g
-                            key={pt.code}
-                            onClick={() => setActiveStageIdx(i)}
-                            className="cursor-pointer"
-                          >
-                            <circle
-                              cx={pt.x}
-                              cy={21}
-                              r={isCurrent ? 8 : 5.5}
-                              fill={isReached ? '#244C3A' : '#FFFFFF'}
-                              stroke={isReached ? '#244C3A' : '#9E9D95'}
-                              strokeWidth="2"
-                              style={{ transition: 'all 400ms ease' }}
-                            />
-                            <text
-                              x={pt.x}
-                              y={38}
-                              textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}
-                              fill={isCurrent ? '#20241F' : '#686B65'}
-                              fontSize="9"
-                              fontFamily="JetBrains Mono, monospace"
-                              fontWeight={isCurrent ? '600' : '400'}
-                            >
-                              {pt.code}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </svg>
-                  </div>
-
-                  {/* Connected Architectural Stages */}
-                  <div className="relative space-y-4">
-                    {/* Vertical connecting line */}
-                    <div
-                      aria-hidden="true"
-                      className="absolute left-[19px] top-6 bottom-6 w-px bg-[#DEDDD5]"
-                    />
-
-                    {/* Stage 1: Record received */}
-                    <div
-                      onClick={() => setActiveStageIdx(0)}
-                      className="relative flex items-start gap-4 cursor-pointer transition-transform duration-300"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-md border flex items-center justify-center shrink-0 z-10 font-mono text-xs font-semibold transition-colors duration-300 ${
-                          activeStageIdx === 0
-                            ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                            : 'bg-[#F0EFE9] text-[#20241F] border-[#DEDDD5]'
-                        }`}
-                      >
-                        01
-                      </div>
-                      <div
-                        className={`flex-1 p-3.5 border rounded-md transition-colors duration-300 ${
-                          activeStageIdx === 0
-                            ? 'bg-white border-[#244C3A] shadow-2xs'
-                            : 'bg-[#F7F6F2] border-[#DEDDD5]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-[#20241F]">
-                            Record received.
-                          </span>
-                          <span className="font-mono text-[11px] text-[#686B65] tabular-nums">
-                            BAT-2026-003 · Row 01
-                          </span>
-                        </div>
-                        <div className="mt-1.5 font-mono text-xs text-[#686B65] tabular-nums flex flex-wrap items-center gap-x-2">
-                          <span>STU-2026-101</span>
-                          <span>·</span>
-                          <span>APAAR ****-****-4756</span>
-                          <span>·</span>
-                          <span>BTECH-CSE</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stage 2: Validation completed */}
-                    <div
-                      onClick={() => setActiveStageIdx(1)}
-                      className="relative flex items-start gap-4 cursor-pointer transition-transform duration-300"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-md border flex items-center justify-center shrink-0 z-10 font-mono text-xs font-semibold transition-colors duration-300 ${
-                          activeStageIdx === 1
-                            ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                            : 'bg-[#F0EFE9] text-[#244C3A] border-[#244C3A]'
-                        }`}
-                      >
-                        02
-                      </div>
-                      <div
-                        className={`flex-1 p-3.5 border rounded-md transition-colors duration-300 ${
-                          activeStageIdx === 1
-                            ? 'bg-white border-[#244C3A] shadow-2xs'
-                            : 'bg-white border-[#DEDDD5]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-[#20241F]">
-                            Validation completed.
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-[#1E563B]">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Ruleset 2026.10.v1</span>
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-[#686B65]">
-                          Format, sanctioned program code, and academic age window verified without
-                          exposing full identifier.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Stage 3: Review required */}
-                    <div
-                      onClick={() => setActiveStageIdx(2)}
-                      className="relative flex items-start gap-4 cursor-pointer transition-transform duration-300"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-md border flex items-center justify-center shrink-0 z-10 font-mono text-xs font-semibold transition-colors duration-300 ${
-                          activeStageIdx === 2
-                            ? 'bg-[#8E6218] text-white border-[#8E6218]'
-                            : 'bg-[#F0EFE9] text-[#8E6218] border-[#DEDDD5]'
-                        }`}
-                      >
-                        03
-                      </div>
-                      <div
-                        className={`flex-1 p-3.5 border rounded-md transition-colors duration-300 ${
-                          activeStageIdx === 2
-                            ? 'bg-white border-[#8E6218] shadow-2xs'
-                            : 'bg-[#F7F6F2] border-[#DEDDD5]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-[#20241F]">
-                            Review required.
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-[#8E6218]">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span>Candidate CNF-2026-019</span>
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-[#686B65]">
-                          Cross-institution APAAR digest match routed to authorized human review
-                          queue; never auto-deleted.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Stage 4: Verification available */}
-                    <div
-                      onClick={() => setActiveStageIdx(3)}
-                      className="relative flex items-start gap-4 cursor-pointer transition-transform duration-300"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 z-10 font-mono text-xs font-semibold transition-colors duration-300 ${
-                          activeStageIdx === 3
-                            ? 'bg-[#244C3A] text-white'
-                            : 'bg-[#244C3A]/85 text-white'
-                        }`}
-                      >
-                        04
-                      </div>
-                      <div
-                        className={`flex-1 p-3.5 bg-white border rounded-md transition-colors duration-300 ${
-                          activeStageIdx === 3
-                            ? 'border-[#244C3A] shadow-2xs'
-                            : 'border-[#244C3A]/40'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-[#20241F]">
-                            Verification available.
-                          </span>
-                          <Link
-                            to="/verify/att-2026-901"
-                            className="font-mono text-[11px] font-medium text-[#244C3A] underline hover:text-[#193B2C]"
-                          >
-                            Inspect /verify/att-2026-901
-                          </Link>
-                        </div>
-                        <p className="mt-1 text-xs text-[#686B65] font-mono tabular-nums">
-                          Ed25519 signed platform attestation · Consent CNS-2026-4401 · Revocable
-                        </p>
-                      </div>
-                    </div>
+                      {autoAlternate ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#85866B] animate-pulse" />
+                          <span>Alternates 10s (Auto ON)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="w-3 h-3 text-[#85866B]" />
+                          <span>Auto Paused</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-              )}
+
+                {/* Alternating View Body */}
+                <div className="relative rounded-xl border border-[#E4DED2] shadow-sm overflow-hidden bg-[#FFFDF8]">
+                  {heroViewMode === '3d' ? (
+                    <WeaveSpatialScene embedded />
+                  ) : (
+                    <LivePipelineStrata />
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Section A — The Problem */}
-        <section id="product" className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#DEDDD5]">
+        <section id="product" className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#E4DED2]">
           <div className="max-w-2xl">
-            <div className="text-xs font-mono uppercase tracking-widest text-[#686B65]">
+            <div className="text-xs font-mono uppercase tracking-widest text-[#77746B]">
               01 · Structural Context
             </div>
-            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#20241F]">
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#302F29]">
               Academic data should not be difficult to trust.
             </h2>
           </div>
 
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-[#DEDDD5]">
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-[#E4DED2]">
             <div className="space-y-2.5">
-              <div className="text-xs font-mono text-[#244C3A] font-semibold">
+              <div className="text-xs font-mono text-[#85866B] font-semibold">
                 01.1 · Institutional Silos
               </div>
-              <h3 className="font-display text-lg font-semibold text-[#20241F]">
+              <h3 className="font-display text-lg font-semibold text-[#302F29]">
                 Fragmented student records.
               </h3>
-              <p className="text-sm text-[#686B65] leading-relaxed">
+              <p className="text-sm text-[#77746B] leading-relaxed">
                 Admissions rosters arrive across disparate spreadsheet schemas, making it difficult
                 to validate program codes, eligibility windows, and identifier integrity before
                 records are committed.
               </p>
             </div>
 
-            <div className="space-y-2.5 md:border-l md:border-[#DEDDD5] md:pl-8">
-              <div className="text-xs font-mono text-[#244C3A] font-semibold">
+            <div className="space-y-2.5 md:border-l md:border-[#E4DED2] md:pl-8">
+              <div className="text-xs font-mono text-[#85866B] font-semibold">
                 01.2 · Cross-Campus Collisions
               </div>
-              <h3 className="font-display text-lg font-semibold text-[#20241F]">
+              <h3 className="font-display text-lg font-semibold text-[#302F29]">
                 Inconsistent and duplicate submissions.
               </h3>
-              <p className="text-sm text-[#686B65] leading-relaxed">
+              <p className="text-sm text-[#77746B] leading-relaxed">
                 During multi-round counselling, a student record may appear simultaneously on two
                 institutional rosters. Resolving overlaps requires structured human review rather
                 than opaque automated rejection.
               </p>
             </div>
 
-            <div className="space-y-2.5 md:border-l md:border-[#DEDDD5] md:pl-8">
-              <div className="text-xs font-mono text-[#244C3A] font-semibold">
+            <div className="space-y-2.5 md:border-l md:border-[#E4DED2] md:pl-8">
+              <div className="text-xs font-mono text-[#85866B] font-semibold">
                 01.3 · Verification Opacity
               </div>
-              <h3 className="font-display text-lg font-semibold text-[#20241F]">
+              <h3 className="font-display text-lg font-semibold text-[#302F29]">
                 Limited visibility into enrolment and verification.
               </h3>
-              <p className="text-sm text-[#686B65] leading-relaxed">
+              <p className="text-sm text-[#77746B] leading-relaxed">
                 Regulators need accurate approved-intake utilization across disciplines, while
                 scholarship and credit bodies need verifiable, minimal-disclosure enrolment
                 attestations without exposing raw identifiers.
@@ -502,13 +309,13 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* Section B — How WEAVE Works */}
-        <section id="how-it-works" className="bg-[#F0EFE9] border-b border-[#DEDDD5] py-16 lg:py-20">
+        <section id="how-it-works" className="bg-[#FBF9F4] border-b border-[#E4DED2] py-16 lg:py-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="max-w-2xl">
-              <div className="text-xs font-mono uppercase tracking-widest text-[#686B65]">
+              <div className="text-xs font-mono uppercase tracking-widest text-[#77746B]">
                 02 · Deterministic Workflow
               </div>
-              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#20241F]">
+              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#302F29]">
                 From submission to verification.
               </h2>
             </div>
@@ -539,17 +346,17 @@ export const LandingPage: React.FC = () => {
               ].map((item, idx) => (
                 <li
                   key={item.step}
-                  className="bg-white border border-[#DEDDD5] rounded-md p-5 flex flex-col justify-between relative"
+                  className="bg-[#FFFDF8] border border-[#E4DED2] rounded-md p-5 flex flex-col justify-between relative shadow-2xs"
                 >
                   <div>
-                    <div className="flex items-center justify-between text-xs font-mono text-[#686B65] pb-3 border-b border-[#DEDDD5]">
+                    <div className="flex items-center justify-between text-xs font-mono text-[#77746B] pb-3 border-b border-[#E4DED2]">
                       <span>{item.step}</span>
-                      <span className="text-[#244C3A] font-semibold">0{idx + 1}</span>
+                      <span className="text-[#85866B] font-semibold">0{idx + 1}</span>
                     </div>
-                    <h3 className="mt-4 font-display text-base font-semibold text-[#20241F]">
+                    <h3 className="mt-4 font-display text-base font-semibold text-[#302F29]">
                       {item.title}
                     </h3>
-                    <p className="mt-1.5 text-xs text-[#686B65] leading-relaxed">{item.desc}</p>
+                    <p className="mt-1.5 text-xs text-[#77746B] leading-relaxed">{item.desc}</p>
                   </div>
                 </li>
               ))}
@@ -558,26 +365,26 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* Section C — The Workspace */}
-        <section className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#DEDDD5]">
+        <section className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#E4DED2]">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-[#686B65]">
+              <div className="text-xs font-mono uppercase tracking-widest text-[#77746B]">
                 03 · Role-Scoped Interfaces
               </div>
-              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#20241F]">
+              <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#302F29]">
                 Clarity for every role.
               </h2>
             </div>
 
             {/* Interactive Workspace Switcher */}
-            <div className="flex items-center gap-1 p-1 bg-[#E9E7DF] rounded-md self-start">
+            <div className="flex items-center gap-1 p-1 bg-[#ECE7DC] rounded-md self-start border border-[#E4DED2]">
               <button
                 type="button"
                 onClick={() => setActiveWorkspacePreview('institution')}
                 className={`px-3.5 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 ${
                   activeWorkspacePreview === 'institution'
-                    ? 'bg-white text-[#20241F] shadow-2xs'
-                    : 'text-[#686B65] hover:text-[#20241F]'
+                    ? 'bg-[#FFFDF8] text-[#302F29] shadow-2xs'
+                    : 'text-[#77746B] hover:text-[#302F29]'
                 }`}
               >
                 Institution workspace
@@ -587,8 +394,8 @@ export const LandingPage: React.FC = () => {
                 onClick={() => setActiveWorkspacePreview('regulator')}
                 className={`px-3.5 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 ${
                   activeWorkspacePreview === 'regulator'
-                    ? 'bg-white text-[#20241F] shadow-2xs'
-                    : 'text-[#686B65] hover:text-[#20241F]'
+                    ? 'bg-[#FFFDF8] text-[#302F29] shadow-2xs'
+                    : 'text-[#77746B] hover:text-[#302F29]'
                 }`}
               >
                 Regulatory oversight
@@ -598,8 +405,8 @@ export const LandingPage: React.FC = () => {
                 onClick={() => setActiveWorkspacePreview('verification')}
                 className={`px-3.5 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 ${
                   activeWorkspacePreview === 'verification'
-                    ? 'bg-white text-[#20241F] shadow-2xs'
-                    : 'text-[#686B65] hover:text-[#20241F]'
+                    ? 'bg-[#FFFDF8] text-[#302F29] shadow-2xs'
+                    : 'text-[#77746B] hover:text-[#302F29]'
                 }`}
               >
                 Verification portal
@@ -608,18 +415,18 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Live Component Previews Consistent with Implemented Pages */}
-          <div className="mt-8 bg-white border border-[#DEDDD5] rounded-md p-6">
+          <div className="mt-8 bg-[#FFFDF8] border border-[#E4DED2] rounded-md p-6">
             {activeWorkspacePreview === 'institution' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                 <div className="lg:col-span-5 space-y-3">
-                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#244C3A]">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#85866B] font-semibold">
                     <Building2 className="w-4 h-4" />
                     <span>Institution workspace.</span>
                   </div>
-                  <h3 className="font-display text-xl font-semibold text-[#20241F]">
+                  <h3 className="font-display text-xl font-semibold text-[#302F29]">
                     Batch ingestion, explainable rule diagnostics, and sanctioned intake tracking.
                   </h3>
-                  <p className="text-sm text-[#686B65] leading-relaxed">
+                  <p className="text-sm text-[#77746B] leading-relaxed">
                     Institution operators and administrators upload CSV batches, inspect row-level
                     validation outcomes (STU-001 through STU-006), and commit eligible records
                     within their isolated institutional tenant.
@@ -627,7 +434,7 @@ export const LandingPage: React.FC = () => {
                   <div className="pt-2">
                     <Link
                       to="/app/imports/BAT-2026-003"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#244C3A] hover:text-[#193B2C] underline"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#85866B] hover:text-[#302F29] underline"
                     >
                       <span>Open Batch BAT-2026-003 Validation Inspector</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -635,40 +442,40 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-7 bg-[#F7F6F2] border border-[#DEDDD5] rounded-md p-4">
-                  <div className="flex items-center justify-between text-xs pb-3 border-b border-[#DEDDD5]">
-                    <span className="font-mono font-semibold text-[#20241F]">
+                <div className="lg:col-span-7 bg-[#FBF9F4] border border-[#E4DED2] rounded-md p-4">
+                  <div className="flex items-center justify-between text-xs pb-3 border-b border-[#E4DED2]">
+                    <span className="font-mono font-semibold text-[#302F29]">
                       BAT-2026-003 · nit_kkr_ug_round3_counselling.csv
                     </span>
-                    <span className="font-mono text-[#686B65]">Ruleset 2026.10.v1</span>
+                    <span className="font-mono text-[#77746B]">Ruleset 2026.10.v1</span>
                   </div>
                   <table className="w-full text-left border-collapse mt-3 text-xs">
                     <thead>
-                      <tr className="border-b border-[#DEDDD5] text-[#686B65]">
+                      <tr className="border-b border-[#E4DED2] text-[#77746B]">
                         <th className="py-2 pr-3">Row Ref</th>
                         <th className="py-2 px-3">Masked APAAR</th>
                         <th className="py-2 px-3">Rule Outcome</th>
                         <th className="py-2 pl-3 text-right">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#DEDDD5] font-mono tabular-nums">
+                    <tbody className="divide-y divide-[#E4DED2] font-mono tabular-nums">
                       <tr>
-                        <td className="py-2 pr-3 text-[#20241F]">STU-2026-101</td>
-                        <td className="py-2 px-3 text-[#686B65]">****-****-4756</td>
-                        <td className="py-2 px-3 text-[#1E563B]">STU-001..004 PASS</td>
-                        <td className="py-2 pl-3 text-right text-[#1E563B]">Verified</td>
+                        <td className="py-2 pr-3 text-[#302F29]">STU-2026-101</td>
+                        <td className="py-2 px-3 text-[#77746B]">****-****-4756</td>
+                        <td className="py-2 px-3 text-[#414B38]">STU-001..004 PASS</td>
+                        <td className="py-2 pl-3 text-right text-[#414B38]">Verified</td>
                       </tr>
                       <tr>
-                        <td className="py-2 pr-3 text-[#20241F]">STU-2026-103</td>
-                        <td className="py-2 px-3 text-[#686B65]">****-****-8472</td>
-                        <td className="py-2 px-3 text-[#8E6218]">STU-005 WARN (Collision)</td>
-                        <td className="py-2 pl-3 text-right text-[#8E6218]">Awaiting Review</td>
+                        <td className="py-2 pr-3 text-[#302F29]">STU-2026-103</td>
+                        <td className="py-2 px-3 text-[#77746B]">****-****-8472</td>
+                        <td className="py-2 px-3 text-[#9B7127]">STU-005 WARN (Collision)</td>
+                        <td className="py-2 pl-3 text-right text-[#9B7127]">Awaiting Review</td>
                       </tr>
                       <tr>
-                        <td className="py-2 pr-3 text-[#20241F]">STU-2026-105</td>
-                        <td className="py-2 px-3 text-[#686B65]">****-****-6512</td>
-                        <td className="py-2 px-3 text-[#99322B]">STU-001, STU-002 FAIL</td>
-                        <td className="py-2 pl-3 text-right text-[#99322B]">Invalid Record</td>
+                        <td className="py-2 pr-3 text-[#302F29]">STU-2026-105</td>
+                        <td className="py-2 px-3 text-[#77746B]">****-****-6512</td>
+                        <td className="py-2 px-3 text-[#8E443D]">STU-001, STU-002 FAIL</td>
+                        <td className="py-2 pl-3 text-right text-[#8E443D]">Invalid Record</td>
                       </tr>
                     </tbody>
                   </table>
@@ -679,14 +486,14 @@ export const LandingPage: React.FC = () => {
             {activeWorkspacePreview === 'regulator' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                 <div className="lg:col-span-5 space-y-3">
-                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#244C3A]">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#85866B] font-semibold">
                     <Scale className="w-4 h-4" />
                     <span>Regulatory oversight.</span>
                   </div>
-                  <h3 className="font-display text-xl font-semibold text-[#20241F]">
+                  <h3 className="font-display text-xl font-semibold text-[#302F29]">
                     Cross-institution duplicate adjudication and intake capacity governance.
                   </h3>
-                  <p className="text-sm text-[#686B65] leading-relaxed">
+                  <p className="text-sm text-[#77746B] leading-relaxed">
                     Regulator officers review candidate APAAR hash matches across institutions,
                     compare sanctioned intake against committed enrolment, and record mandatory
                     audit reasons for every decision.
@@ -694,7 +501,7 @@ export const LandingPage: React.FC = () => {
                   <div className="pt-2">
                     <Link
                       to="/app/duplicates"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#244C3A] hover:text-[#193B2C] underline"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#85866B] hover:text-[#302F29] underline"
                     >
                       <span>Open Regulator Duplicate Review Queue</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -702,34 +509,34 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-7 bg-[#F7F6F2] border border-[#DEDDD5] rounded-md p-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs pb-2 border-b border-[#DEDDD5]">
-                    <span className="font-mono font-semibold text-[#20241F]">
+                <div className="lg:col-span-7 bg-[#FBF9F4] border border-[#E4DED2] rounded-md p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-[#E4DED2]">
+                    <span className="font-mono font-semibold text-[#302F29]">
                       Candidate CNF-2026-019 · CROSS_INSTITUTION_DUPLICATE
                     </span>
-                    <span className="font-mono text-[#8E6218]">Similarity: 0.99</span>
+                    <span className="font-mono text-[#9B7127]">Similarity: 0.99</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 bg-white border border-[#DEDDD5] rounded-sm">
-                      <div className="text-[#686B65]">Primary Submission</div>
-                      <div className="font-semibold text-[#20241F] mt-0.5">
+                    <div className="p-3 bg-[#FFFDF8] border border-[#E4DED2] rounded-sm">
+                      <div className="text-[#77746B]">Primary Submission</div>
+                      <div className="font-semibold text-[#302F29] mt-0.5">
                         NIT Kurukshetra (INST-KKR-101)
                       </div>
-                      <div className="font-mono text-[#686B65] mt-0.5">
+                      <div className="font-mono text-[#77746B] mt-0.5">
                         BTECH-CSE · AY 2026–27
                       </div>
                     </div>
-                    <div className="p-3 bg-white border border-[#DEDDD5] rounded-sm">
-                      <div className="text-[#686B65]">Counterpart Registration</div>
-                      <div className="font-semibold text-[#20241F] mt-0.5">
+                    <div className="p-3 bg-[#FFFDF8] border border-[#E4DED2] rounded-sm">
+                      <div className="text-[#77746B]">Counterpart Registration</div>
+                      <div className="font-semibold text-[#302F29] mt-0.5">
                         IIET Delhi (INST-DEL-202)
                       </div>
-                      <div className="font-mono text-[#686B65] mt-0.5">
+                      <div className="font-mono text-[#77746B] mt-0.5">
                         BTECH-CSE · AY 2026–27
                       </div>
                     </div>
                   </div>
-                  <p className="text-[11px] text-[#686B65]">
+                  <p className="text-[11px] text-[#77746B]">
                     Note: A candidate hash match is not proof of fraud. Officers verify withdrawal
                     documentation before confirming or dismissing.
                   </p>
@@ -740,14 +547,14 @@ export const LandingPage: React.FC = () => {
             {activeWorkspacePreview === 'verification' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                 <div className="lg:col-span-5 space-y-3">
-                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#244C3A]">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-[#85866B] font-semibold">
                     <FileCheck2 className="w-4 h-4" />
                     <span>Verification portal.</span>
                   </div>
-                  <h3 className="font-display text-xl font-semibold text-[#20241F]">
+                  <h3 className="font-display text-xl font-semibold text-[#302F29]">
                     Public token verification with minimal disclosure and revocation checks.
                   </h3>
-                  <p className="text-sm text-[#686B65] leading-relaxed">
+                  <p className="text-sm text-[#77746B] leading-relaxed">
                     External verifiers inspect opaque verification tokens (`/verify/:token`) to
                     confirm Ed25519 signature validity, expiry, and revocation status without
                     receiving raw student identifiers.
@@ -755,7 +562,7 @@ export const LandingPage: React.FC = () => {
                   <div className="pt-2">
                     <Link
                       to="/verify/att-2026-901"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#244C3A] hover:text-[#193B2C] underline"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#85866B] hover:text-[#302F29] underline"
                     >
                       <span>Open Public Verification Portal (/verify/att-2026-901)</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -763,20 +570,20 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-7 bg-[#F7F6F2] border border-[#DEDDD5] rounded-md p-4 space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#DEDDD5]">
-                    <span className="font-mono font-semibold text-[#1E563B]">
+                <div className="lg:col-span-7 bg-[#FBF9F4] border border-[#E4DED2] rounded-md p-4 space-y-3 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E4DED2]">
+                    <span className="font-mono font-semibold text-[#414B38]">
                       VERIFIED_ACTIVE · Token att-2026-901
                     </span>
-                    <span className="font-mono text-[#686B65]">Key: ed25519-weave-synth-2026-k1</span>
+                    <span className="font-mono text-[#77746B]">Key: ed25519-weave-synth-2026-k1</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 font-mono tabular-nums text-[#20241F]">
+                  <div className="grid grid-cols-2 gap-2 font-mono tabular-nums text-[#302F29]">
                     <div>Subject Ref: STU-2026-101</div>
                     <div>Masked APAAR: ****-****-4756</div>
                     <div>Program: BTECH-CSE (2026)</div>
                     <div>Consent: CNS-2026-4401</div>
                   </div>
-                  <div className="pt-2 border-t border-[#DEDDD5] text-[11px] text-[#686B65]">
+                  <div className="pt-2 border-t border-[#E4DED2] text-[11px] text-[#77746B]">
                     Platform-issued enrolment attestation. Not an official government credential.
                   </div>
                 </div>
@@ -788,13 +595,13 @@ export const LandingPage: React.FC = () => {
         {/* Section D — Trust and Privacy */}
         <section
           id="trust-security"
-          className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#DEDDD5]"
+          className="max-w-6xl mx-auto px-6 py-16 lg:py-20 border-b border-[#E4DED2]"
         >
           <div className="max-w-2xl">
-            <div className="text-xs font-mono uppercase tracking-widest text-[#686B65]">
+            <div className="text-xs font-mono uppercase tracking-widest text-[#77746B]">
               04 · Governance &amp; Security Architecture
             </div>
-            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#20241F]">
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#302F29]">
               Designed to handle records responsibly.
             </h2>
           </div>
@@ -828,31 +635,31 @@ export const LandingPage: React.FC = () => {
             ].map((item) => (
               <div
                 key={item.title}
-                className="p-5 bg-white border border-[#DEDDD5] rounded-md space-y-2"
+                className="p-5 bg-[#FFFDF8] border border-[#E4DED2] rounded-md space-y-2 shadow-2xs"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display text-sm font-semibold text-[#20241F]">
+                  <h3 className="font-display text-sm font-semibold text-[#302F29]">
                     {item.title}
                   </h3>
-                  <Lock className="w-3.5 h-3.5 text-[#686B65] shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-[#77746B] shrink-0" />
                 </div>
-                <p className="text-xs text-[#686B65] leading-relaxed">{item.desc}</p>
+                <p className="text-xs text-[#77746B] leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* Section E — Final Call to Action */}
-        <section className="bg-[#F0EFE9] py-16 border-b border-[#DEDDD5]">
+        <section className="bg-[#FBF9F4] py-16 border-b border-[#E4DED2]">
           <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
-              <div className="text-xs font-mono uppercase tracking-widest text-[#244C3A]">
+              <div className="text-xs font-mono uppercase tracking-widest text-[#85866B] font-semibold">
                 SIH26263 Demonstration Workspace
               </div>
-              <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#20241F]">
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#302F29]">
                 Build confidence into every academic record.
               </h2>
-              <p className="text-sm text-[#686B65] max-w-xl">
+              <p className="text-sm text-[#77746B] max-w-xl">
                 Explore the institutional and regulatory workspaces using synthetic demonstration
                 fixtures or test the public attestation verifier.
               </p>
@@ -860,13 +667,13 @@ export const LandingPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 to="/app"
-                className="px-5 py-2.5 text-sm font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md transition-colors whitespace-nowrap"
+                className="px-5 py-2.5 text-sm font-semibold text-[#FFFDF8] bg-[#302F29] hover:bg-[#414B38] rounded-md transition-colors whitespace-nowrap shadow-sm border border-[#C5AD82]/30"
               >
                 Open workspace
               </Link>
               <Link
                 to="/verify/att-2026-901"
-                className="px-5 py-2.5 text-sm font-medium text-[#20241F] bg-white border border-[#DEDDD5] hover:bg-[#F7F6F2] rounded-md transition-colors whitespace-nowrap"
+                className="px-5 py-2.5 text-sm font-medium text-[#302F29] bg-[#FFFDF8] border border-[#E4DED2] hover:bg-[#FBF9F4] hover:border-[#C5AD82] rounded-md transition-colors whitespace-nowrap"
               >
                 Verify sample credential
               </Link>
@@ -876,9 +683,9 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* Restrained Institutional Footer */}
-      <footer className="bg-[#F7F6F2] py-10 px-6 text-xs text-[#686B65]">
+      <footer className="bg-[#F5F1E8] py-10 px-6 text-xs text-[#77746B]">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#DEDDD5]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E4DED2]">
             <div className="flex items-center gap-3">
               <WeaveLogo />
               <span aria-hidden="true">·</span>
@@ -886,16 +693,16 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
-              <a href="#product" className="hover:text-[#20241F] transition-colors">
+              <a href="#product" className="hover:text-[#302F29] transition-colors">
                 Product
               </a>
-              <a href="#trust-security" className="hover:text-[#20241F] transition-colors">
+              <a href="#trust-security" className="hover:text-[#302F29] transition-colors">
                 Trust &amp; Security
               </a>
-              <Link to="/app/audit" className="hover:text-[#20241F] transition-colors">
+              <Link to="/app/audit" className="hover:text-[#302F29] transition-colors">
                 Documentation &amp; Rules
               </Link>
-              <Link to="/login" className="hover:text-[#20241F] transition-colors">
+              <Link to="/login" className="hover:text-[#302F29] transition-colors">
                 Sign in
               </Link>
             </div>
@@ -908,7 +715,7 @@ export const LandingPage: React.FC = () => {
               This platform does not claim live integration with official government APAAR,
               DigiLocker, or AICTE production systems.
             </p>
-            <span className="font-mono shrink-0 text-[#20241F]">Contract /api/v1</span>
+            <span className="font-mono shrink-0 text-[#302F29]">Contract /api/v1</span>
           </div>
         </div>
       </footer>

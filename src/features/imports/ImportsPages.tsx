@@ -52,7 +52,7 @@ export const ImportsListPage: React.FC = () => {
           </div>
           <Link
             to="/app/imports/new"
-            className="px-3.5 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-md"
+            className="px-3.5 py-2 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] rounded-md shadow-sm transition-colors"
           >
             Launch CSV Import Wizard
           </Link>
@@ -85,7 +85,7 @@ export const ImportsListPage: React.FC = () => {
                   <td className="py-3 px-4 text-right font-sans">
                     <Link
                       to={`/app/imports/${b.id}`}
-                      className="inline-flex items-center gap-1 text-[#244C3A] font-medium hover:underline"
+                      className="inline-flex items-center gap-1 text-[#9B7B32] font-semibold hover:text-[#181B18] hover:underline"
                     >
                       <span>Review Issues</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -192,7 +192,7 @@ export const CsvImportWizardPage: React.FC = () => {
       <div className="bg-white border border-[#DEDDD5] rounded-md p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DEDDD5]">
           <div>
-            <div className="text-xs font-mono text-[#244C3A]">Step 01 · Schema &amp; Template</div>
+            <div className="text-xs font-mono text-[#9B7B32] font-semibold">Step 01 · Schema &amp; Template</div>
             <h2 className="font-display text-base font-semibold text-[#20241F]">
               Required Column Checklist &amp; Synthetic Presets
             </h2>
@@ -247,7 +247,7 @@ export const CsvImportWizardPage: React.FC = () => {
                 }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-sm border transition-colors ${
                   presetKey === key
-                    ? 'bg-[#244C3A] text-white border-[#244C3A]'
+                    ? 'bg-[#181B18] text-[#FAF8F3] border-[#181B18]'
                     : 'bg-[#F7F6F2] text-[#20241F] border-[#DEDDD5] hover:bg-[#E9E7DF]'
                 }`}
               >
@@ -261,7 +261,7 @@ export const CsvImportWizardPage: React.FC = () => {
       {/* Step 2: Upload / Edit CSV & Preview First Rows */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-6 bg-white border border-[#DEDDD5] rounded-md p-6 space-y-4">
-          <div className="text-xs font-mono text-[#244C3A]">Step 02 · Upload or Edit CSV</div>
+          <div className="text-xs font-mono text-[#9B7B32] font-semibold">Step 02 · Upload or Edit CSV</div>
 
           {/* Drag and Drop Zone */}
           <div
@@ -278,14 +278,14 @@ export const CsvImportWizardPage: React.FC = () => {
             }}
             className={`p-5 border-2 border-dashed rounded-md text-center space-y-2 transition-colors ${
               dragActive
-                ? 'border-[#244C3A] bg-[#244C3A]/5'
+                ? 'border-[#C5A869] bg-[#C5A869]/10'
                 : 'border-[#DEDDD5] bg-[#F7F6F2]'
             }`}
           >
             <Upload className="w-5 h-5 text-[#686B65] mx-auto" />
             <div className="text-xs text-[#20241F]">
               Drag and drop a `.csv` file here (max 2 MB), or{' '}
-              <label className="text-[#244C3A] font-semibold underline cursor-pointer">
+              <label className="text-[#9B7B32] font-semibold underline cursor-pointer">
                 browse local files
                 <input
                   type="file"
@@ -353,7 +353,7 @@ export const CsvImportWizardPage: React.FC = () => {
             type="button"
             disabled={uploadMutation.isPending || user.role === 'auditor'}
             onClick={() => uploadMutation.mutate()}
-            className="w-full py-2.5 px-4 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-50 rounded-md transition-colors"
+            className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-50 rounded-md transition-colors shadow-sm"
           >
             {uploadMutation.isPending
               ? 'Submitting Batch to Backend Validation Engine...'
@@ -366,7 +366,7 @@ export const CsvImportWizardPage: React.FC = () => {
         {/* Step 3: Row Preview */}
         <div className="lg:col-span-6 bg-white border border-[#DEDDD5] rounded-md p-6 space-y-4">
           <div>
-            <div className="text-xs font-mono text-[#244C3A]">
+            <div className="text-xs font-mono text-[#9B7B32] font-semibold">
               Step 03 · Preflight Row Preview ({parsedPreview.rows.length} rows)
             </div>
             <h3 className="font-display text-base font-semibold text-[#20241F]">
@@ -546,7 +546,7 @@ export const BatchValidationResultsPage: React.FC = () => {
                 commitMutation.isPending
               }
               onClick={() => commitMutation.mutate()}
-              className="px-4 py-2 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-45 rounded-md transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-45 rounded-md transition-colors shadow-sm"
             >
               {batch.committed
                 ? `Committed (${batch.committed_rows || batch.passed_rows} Rows)`
@@ -705,7 +705,7 @@ export const BatchValidationResultsPage: React.FC = () => {
                       </div>
 
                       {vr.remediation && vr.outcome !== 'PASS' && (
-                        <div className="pt-1 text-[11px] text-[#244C3A] font-medium">
+                        <div className="pt-1 text-[11px] text-[#9B7B32] font-medium">
                           Suggested Remediation: {vr.remediation}
                         </div>
                       )}

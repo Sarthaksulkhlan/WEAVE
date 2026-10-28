@@ -30,31 +30,31 @@ export const WeaveLogo: React.FC<WeaveLogoProps> = ({
           width="21"
           height="21"
           rx="3.5"
-          stroke="#244C3A"
+          stroke="#C5AD82"
           strokeWidth="1.5"
-          fill="#F7F6F2"
+          fill="#FFFDF8"
         />
         {/* Woven horizontal and vertical record threads */}
         <path
           d="M5.5 8.5H18.5M5.5 15.5H18.5"
-          stroke="#20241F"
+          stroke="#302F29"
           strokeWidth="1.5"
           strokeLinecap="square"
         />
         <path
           d="M8.5 5.5V18.5M15.5 5.5V18.5"
-          stroke="#244C3A"
+          stroke="#C5AD82"
           strokeWidth="1.5"
           strokeLinecap="square"
         />
         {/* Intersection verification nodes */}
-        <rect x="7" y="7" width="3" height="3" fill="#244C3A" />
-        <rect x="14" y="14" width="3" height="3" fill="#244C3A" />
-        <rect x="14" y="7" width="3" height="3" fill="#20241F" />
-        <rect x="7" y="14" width="3" height="3" fill="#20241F" />
+        <rect x="7" y="7" width="3" height="3" fill="#C5AD82" />
+        <rect x="14" y="14" width="3" height="3" fill="#C5AD82" />
+        <rect x="14" y="7" width="3" height="3" fill="#302F29" />
+        <rect x="7" y="14" width="3" height="3" fill="#85866B" />
       </svg>
       {!markOnly && (
-        <span className="font-display font-bold tracking-tight text-[#20241F] text-lg leading-none">
+        <span className="font-display font-bold tracking-tight text-[#302F29] text-lg leading-none">
           WEAVE
         </span>
       )}

@@ -94,7 +94,7 @@ export const DuplicatesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => switchRolePersona('regulator_officer')}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] rounded-sm shrink-0"
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] rounded-sm shrink-0 shadow-sm transition-colors"
           >
             Switch to Regulator Officer to Adjudicate
           </button>
@@ -203,7 +203,7 @@ export const DuplicatesPage: React.FC = () => {
                     </span>
                   </h3>
                   {c.similarity_score !== undefined && (
-                    <span className="font-mono text-xs text-[#244C3A] tabular-nums">
+                    <span className="font-mono text-xs text-[#9B7B32] font-semibold tabular-nums">
                       Similarity: {(c.similarity_score * 100).toFixed(0)}%
                     </span>
                   )}
@@ -360,7 +360,7 @@ export const DuplicatesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!canAdjudicate || resolveMutation.isPending}
-                  className="w-full py-2 px-4 text-xs font-medium text-white bg-[#244C3A] hover:bg-[#193B2C] disabled:opacity-45 rounded-md transition-colors"
+                  className="w-full py-2 px-4 text-xs font-semibold text-white bg-[#181B18] hover:bg-[#2A302B] disabled:opacity-45 rounded-md transition-colors shadow-sm"
                 >
                   {canAdjudicate
                     ? resolveMutation.isPending

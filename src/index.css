@@ -1,20 +1,64 @@
 @import "tailwindcss";
 
+@theme {
+  --color-cream-bg: #F5F1E8;
+  --color-ivory: #FBF9F4;
+  --color-porcelain: #FFFDF8;
+  --color-olive-muted: #85866B;
+  --color-moss-deep: #414B38;
+  --color-sage-soft: #A8B19A;
+  --color-taupe-warm: #B7AA98;
+  --color-champagne-accent: #C5AD82;
+  --color-text-dark: #302F29;
+  --color-text-muted: #77746B;
+  --color-border-delicate: #E4DED2;
+  
+  --color-brand-primary: #302F29;
+  --color-brand-hover: #414B38;
+  --color-brand-accent: #C5AD82;
+}
+
 @layer base {
   :root {
-    --bg-ivory: #F7F6F2;
-    --bg-surface: #FFFFFF;
-    --bg-subtle: #F0EFE9;
-    --bg-stone: #E9E7DF;
-    --text-ink: #20241F;
-    --text-graphite: #686B65;
-    --brand-forest: #244C3A;
-    --brand-forest-hover: #193B2C;
-    --border-warm: #DEDDD5;
-    --status-success: #1E563B;
-    --status-warning: #8E6218;
-    --status-error: #99322B;
-    --status-info: #475863;
+    /* WEAVE Light Cream Minimal Palette */
+    --bg-cream: #F5F1E8;
+    --bg-ivory: #FBF9F4;
+    --bg-porcelain: #FFFDF8;
+    --bg-surface: #FFFDF8;
+    --bg-subtle: #F5F1E8;
+    --bg-stone: #ECE7DC;
+
+    /* Text Hierarchy */
+    --text-dark: #302F29;
+    --text-ink: #302F29;
+    --text-muted: #77746B;
+    --text-graphite: #77746B;
+
+    /* Editorial & Architectural Accents */
+    --accent-olive: #85866B;
+    --accent-moss: #414B38;
+    --accent-sage: #A8B19A;
+    --accent-taupe: #B7AA98;
+    --accent-champagne: #C5AD82;
+    --accent-champagne-hover: #B49A6E;
+    --accent-champagne-light: #FAF5EB;
+
+    /* Delicate Architectural Borders */
+    --border-delicate: #E4DED2;
+    --border-warm: #E4DED2;
+    --border-subtle: #EDE8DC;
+
+    /* Primary Brand Button / Interactive */
+    --brand-primary: #302F29;
+    --brand-primary-hover: #414B38;
+    --brand-forest: #302F29;
+    --brand-forest-hover: #414B38;
+
+    /* Semantic Status (refined, not garish) */
+    --status-success: #3F5E4D;
+    --status-warning: #946B2C;
+    --status-error: #9E3D35;
+    --status-info: #4E6B66;
 
     --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -23,8 +67,8 @@
 
   html {
     scroll-behavior: smooth;
-    background-color: var(--bg-ivory);
-    color: var(--text-ink);
+    background-color: var(--bg-cream);
+    color: var(--text-dark);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -40,9 +84,11 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--bg-ivory);
-    color: var(--text-ink);
+    background-color: var(--bg-cream);
+    color: var(--text-dark);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -59,3 +105,15 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Custom minimal utility helpers */
+.bg-cream { background-color: var(--bg-cream); }
+.bg-ivory { background-color: var(--bg-ivory); }
+.bg-porcelain { background-color: var(--bg-porcelain); }
+.text-dark { color: var(--text-dark); }
+.text-muted-warm { color: var(--text-muted); }
+.text-olive { color: var(--accent-olive); }
+.text-moss { color: var(--accent-moss); }
+.text-sage { color: var(--accent-sage); }
+.text-champagne { color: var(--accent-champagne); }
+.border-delicate { border-color: var(--border-delicate); }

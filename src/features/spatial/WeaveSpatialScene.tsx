@@ -16,6 +16,9 @@ import {
   RotateCcw,
   ShieldCheck,
   Sliders,
+  Info,
+  HelpCircle,
+  X,
 } from 'lucide-react';
 
 // Pre-allocated scratch math helpers at module scope — zero GC inside requestAnimationFrame
@@ -29,7 +32,7 @@ const _quat = new THREE.Quaternion();
 const _dummy = new THREE.Object3D();
 const _color = new THREE.Color();
 
-export type CameraPresetKey = 'overview' | 'vault' | 'gateways' | 'blueprint';
+export type CameraPresetKey = 'overview' | 'vault' | 'gateways' | 'detail' | 'blueprint';
 
 interface CameraPreset {
   label: string;
@@ -39,22 +42,27 @@ interface CameraPreset {
 
 const CAMERA_PRESETS: Record<CameraPresetKey, CameraPreset> = {
   overview: {
-    label: 'Isometric Overview',
+    label: 'Perspective',
     position: [10.5, 8.2, 11.5],
     target: [0, 1.4, 0],
   },
   vault: {
-    label: 'Ed25519 Attestation Vault',
-    position: [4.2, 3.6, 4.8],
+    label: 'Front Core',
+    position: [0.1, 4.0, 7.8],
     target: [0, 1.9, 0],
   },
   gateways: {
-    label: 'Institution Gateways',
+    label: 'Orbital / Side',
     position: [-9.5, 5.4, 8.8],
     target: [-2.2, 1.0, 1.5],
   },
+  detail: {
+    label: 'Detail Inspection',
+    position: [3.4, 2.9, 4.1],
+    target: [0, 1.85, 0],
+  },
   blueprint: {
-    label: 'Top Planimetric View',
+    label: 'Elevated Plan',
     position: [0.01, 16.5, 0.01],
     target: [0, 0, 0],
   },
@@ -112,6 +120,64 @@ const NODE_TELEMETRY: Record<string, NodeTelemetry> = {
   },
 };
 
+export interface ComponentDetails {
+  id: string;
+  name: string;
+  role: string;
+  inputs: string;
+  outputs: string;
+  relationships: string;
+  cameraPreset: CameraPresetKey;
+}
+
+export const APPARATUS_COMPONENTS: ComponentDetails[] = [
+  {
+    id: 'VAULT-CORE',
+    name: 'Ed25519 Cryptographic Attestation Core',
+    role: 'Platform root cryptographic trust anchor and official verification credential issuer.',
+    inputs: 'Preflight-validated student records and institutional policy keys.',
+    outputs: 'Signed Ed25519 attestation payloads, QR verification tokens, and Merkle event hashes.',
+    relationships: 'Direct verification bus to all campus gateways and the audit ledger.',
+    cameraPreset: 'vault',
+  },
+  {
+    id: 'CAMPUS-GATEWAYS',
+    name: 'Decentralized Institution Gateways',
+    role: 'Isolated college tenant nodes for CSV batch ingestion and roster pre-checks.',
+    inputs: 'Departmental admission CSV rosters with 12-digit student identifiers.',
+    outputs: 'Masked APAAR formats (****-****-XXXX) and salted SHA-256 digests.',
+    relationships: 'Strict tenant isolation prevents colleges from viewing competing rosters.',
+    cameraPreset: 'gateways',
+  },
+  {
+    id: 'VERIFICATION-BUS',
+    name: 'High-Throughput Verification Conduits',
+    role: 'Streaming telemetry pipelines routing record packets and verification signals.',
+    inputs: 'Intra-batch student rows and external verification requests.',
+    outputs: 'Deterministic validation status flags (STU-001 through STU-006).',
+    relationships: 'Transports record packets between campus nodes, the core vault, and the ledger.',
+    cameraPreset: 'detail',
+  },
+  {
+    id: 'AUDIT-LEDGER',
+    name: 'SHA-256 Tamper-Evident Chronological Ledger',
+    role: 'Cryptographic audit base recording all batch ingestion, commits, and revocations.',
+    inputs: 'Sequential operational events with previous_hash pointer.',
+    outputs: 'Verifiable cryptographic chain integrity and compliance proofs.',
+    relationships: 'Provides immutable audit timeline for institutional auditors and regulators.',
+    cameraPreset: 'blueprint',
+  },
+  {
+    id: 'REGULATOR-HUB',
+    name: 'Regulatory Adjudication & Seat Governance Hub',
+    role: 'Cross-institution conflict resolution and AICTE approved intake monitoring.',
+    inputs: 'Cross-institution collision flags (STU-005) and program intake telemetry.',
+    outputs: 'Multi-round transfer decisions and sanctioned seat utilization reports.',
+    relationships: 'Supervisory authority over all participating technical institutions.',
+    cameraPreset: 'overview',
+  },
+];
+
 function createCalibrationDialTexture(maxAnisotropy: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
@@ -139,7 +205,7 @@ function createCalibrationDialTexture(maxAnisotropy: number): THREE.CanvasTextur
     const isMajor = i % 6 === 0;
     const rInner = isMajor ? 430 : 450;
     const rOuter = 470;
-    ctx.strokeStyle = isMajor ? '#244C3A' : '#8C8F87';
+    ctx.strokeStyle = isMajor ? '#C5A869' : '#94A3B8';
     ctx.lineWidth = isMajor ? 4 : 2;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(angle) * rInner, cy + Math.sin(angle) * rInner);
@@ -193,11 +259,11 @@ function createArchitectGridTexture(maxAnisotropy: number): THREE.CanvasTexture 
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#F7F6F2';
+  ctx.fillStyle = '#F5F1E8';
   ctx.fillRect(0, 0, 512, 512);
 
   // Sub-grid
-  ctx.strokeStyle = '#EAE8E0';
+  ctx.strokeStyle = '#ECE7DC';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 512; i += 64) {
     ctx.beginPath();
@@ -211,7 +277,7 @@ function createArchitectGridTexture(maxAnisotropy: number): THREE.CanvasTexture 
   }
 
   // Primary border grid
-  ctx.strokeStyle = '#DCDAD0';
+  ctx.strokeStyle = '#E4DED2';
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, 512, 512);
 
@@ -238,6 +304,16 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string>('VAULT-CORE');
 
+  // Interactive Explanatory Modals ('none' | 'what' | 'why' | 'components')
+  const [activeModal, setActiveModal] = useState<'none' | 'what' | 'why' | 'components'>('none');
+  const [selectedComponentId, setSelectedComponentId] = useState<string>('VAULT-CORE');
+  const [autoTourEnabled, setAutoTourEnabled] = useState<boolean>(true);
+  const lastInteractionRef = useRef<number>(Date.now());
+
+  const registerUserInteraction = () => {
+    lastInteractionRef.current = Date.now();
+  };
+
   // Mutable refs read inside the WebGL animation loop without re-creating scene
   const stateRef = useRef({
     explodedTarget: 0,
@@ -246,6 +322,10 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
     isPaused: false,
     presetKey: 'overview' as CameraPresetKey,
     transitionActive: false,
+    transitionStartTime: 0,
+    transitionDuration: 2.8, // Smooth 2.8s cinematic camera shift
+    startPos: new THREE.Vector3(...CAMERA_PRESETS.overview.position),
+    startLook: new THREE.Vector3(...CAMERA_PRESETS.overview.target),
   });
 
   useEffect(() => {
@@ -261,10 +341,55 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
   }, [isPaused]);
 
   const handleSelectPreset = (key: CameraPresetKey) => {
+    registerUserInteraction();
     setActivePreset(key);
     stateRef.current.presetKey = key;
     stateRef.current.transitionActive = true;
+    stateRef.current.transitionStartTime = 0; // Trigger fresh interpolation
   };
+
+  const handleResetView = () => {
+    registerUserInteraction();
+    setExplodedFactor(0);
+    handleSelectPreset('overview');
+    setSelectedNodeId('VAULT-CORE');
+    setSelectedComponentId('VAULT-CORE');
+  };
+
+  // Automatic camera movement choreography: smoothly shifts for 2.8s, pauses for 3.5s, then next view arrives
+  useEffect(() => {
+    if (!autoTourEnabled) return;
+    const presetsList: CameraPresetKey[] = ['overview', 'vault', 'gateways', 'detail', 'blueprint'];
+    let presetIdx = 0;
+    let assemblyStep = 0;
+
+    const tourInterval = window.setInterval(() => {
+      const idleMs = Date.now() - lastInteractionRef.current;
+      if (idleMs < 7500) return; // User is actively exploring
+
+      // 1. Advance camera preset (shifts for 2.8s, holds for 3.7s)
+      presetIdx = (presetIdx + 1) % presetsList.length;
+      const nextPreset = presetsList[presetIdx];
+      setActivePreset(nextPreset);
+      stateRef.current.presetKey = nextPreset;
+      stateRef.current.transitionActive = true;
+      stateRef.current.transitionStartTime = 0;
+
+      // 2. Advance assembly step (assembled -> separating -> exploded -> reassembling)
+      assemblyStep = (assemblyStep + 1) % 4;
+      if (assemblyStep === 0) {
+        setExplodedFactor(0);
+      } else if (assemblyStep === 1) {
+        setExplodedFactor(0.85);
+      } else if (assemblyStep === 2) {
+        setExplodedFactor(0.85);
+      } else {
+        setExplodedFactor(0);
+      }
+    }, 6500); // 2.8s transition + 3.7s dwell time = 6.5s per cycle
+
+    return () => window.clearInterval(tourInterval);
+  }, [autoTourEnabled]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -319,8 +444,8 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf7f6f2);
-    scene.fog = new THREE.FogExp2(0xf7f6f2, 0.025);
+    scene.background = new THREE.Color(0xf5f1e8);
+    scene.fog = new THREE.FogExp2(0xf5f1e8, 0.025);
 
     // 2. Studio Environment Map via RoomEnvironment + PMREMGenerator
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -879,25 +1004,32 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
       }
       packetsInstanced.instanceMatrix.needsUpdate = true;
 
-      // 4. Smooth Damped Camera Preset Transitions
+      // 4. Smooth 2.8-Second Cinematic Camera Shift (2-3 seconds shift, then rests at target)
       if (st.transitionActive) {
+        if (st.transitionStartTime === 0) {
+          st.transitionStartTime = performance.now();
+          st.startPos.copy(camera.position);
+          st.startLook.copy(controls.target);
+        }
+
+        const now = performance.now();
+        const elapsed = (now - st.transitionStartTime) / (st.transitionDuration * 1000);
         const preset = CAMERA_PRESETS[st.presetKey];
         _targetPos.set(...preset.position);
         _targetLook.set(...preset.target);
 
-        camera.position.x = THREE.MathUtils.damp(camera.position.x, _targetPos.x, 5.5, dt);
-        camera.position.y = THREE.MathUtils.damp(camera.position.y, _targetPos.y, 5.5, dt);
-        camera.position.z = THREE.MathUtils.damp(camera.position.z, _targetPos.z, 5.5, dt);
-
-        controls.target.x = THREE.MathUtils.damp(controls.target.x, _targetLook.x, 5.5, dt);
-        controls.target.y = THREE.MathUtils.damp(controls.target.y, _targetLook.y, 5.5, dt);
-        controls.target.z = THREE.MathUtils.damp(controls.target.z, _targetLook.z, 5.5, dt);
-
-        if (
-          camera.position.distanceToSquared(_targetPos) < 0.01 &&
-          controls.target.distanceToSquared(_targetLook) < 0.01
-        ) {
+        if (elapsed >= 1) {
+          camera.position.copy(_targetPos);
+          controls.target.copy(_targetLook);
           st.transitionActive = false;
+        } else {
+          // Smooth cubic ease-in-out curve
+          const ease =
+            elapsed < 0.5
+              ? 4 * elapsed * elapsed * elapsed
+              : 1 - Math.pow(-2 * elapsed + 2, 3) / 2;
+          camera.position.lerpVectors(st.startPos, _targetPos, ease);
+          controls.target.lerpVectors(st.startLook, _targetLook, ease);
         }
       }
 
@@ -930,8 +1062,8 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
 
   return (
     <div
-      className={`relative overflow-hidden bg-[#F7F6F2] select-none ${
-        embedded ? 'w-full h-[540px] rounded border border-[#DEDDD5]' : 'w-screen h-screen'
+      className={`relative overflow-hidden bg-[#F5F1E8] select-none ${
+        embedded ? 'w-full h-[540px] rounded border border-[#E4DED2]' : 'w-screen h-screen'
       }`}
     >
       {/* Isolated WebGL Mount Container */}
@@ -943,34 +1075,85 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
 
       {/* Minimal Top-Left Specification & Selected Node Telemetry Header */}
       <div className="absolute top-4 left-4 right-4 flex flex-wrap items-start justify-between gap-3 pointer-events-none">
-        <div className="pointer-events-auto bg-[#FFFFFF] border border-[#DEDDD5] rounded px-4 py-3 shadow-xs max-w-md">
+        <div className="pointer-events-auto bg-[#FFFDF8] border border-[#E4DED2] rounded px-4 py-3 shadow-xs max-w-md">
           <div className="flex items-center justify-between gap-3 mb-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#244C3A] font-semibold">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#85866B] font-semibold">
               3D SPATIAL VERIFICATION TOPOLOGY · {activeNode.id}
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#EAF2EE] text-[#1E563B] border border-[#1E563B]/20">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FBF9F4] text-[#85866B] border border-[#C5AD82]/40 font-medium">
               {activeNode.statusLabel}
             </span>
           </div>
-          <h2 className="text-sm font-semibold text-[#20241F] leading-snug">{activeNode.title}</h2>
-          <p className="text-xs text-[#686B65] mt-0.5">{activeNode.subtitle}</p>
-          <div className="mt-2 pt-2 border-t border-[#F0EFE9] flex items-center justify-between text-[11px] font-mono text-[#20241F]">
+          <h2 className="text-sm font-semibold text-[#302F29] leading-snug">{activeNode.title}</h2>
+          <p className="text-xs text-[#77746B] mt-0.5">{activeNode.subtitle}</p>
+          <div className="mt-2 pt-2 border-t border-[#ECE7DC] flex items-center justify-between text-[11px] font-mono text-[#302F29]">
             <span>{activeNode.metrics}</span>
           </div>
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex items-center gap-2 flex-wrap">
+          {/* Explanatory Control Buttons */}
+          <button
+            type="button"
+            onClick={() => {
+              registerUserInteraction();
+              setActiveModal('what');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#FFFDF8] text-[#302F29] border border-[#E4DED2] rounded hover:border-[#C5AD82] hover:bg-[#FBF9F4] transition-colors shadow-xs"
+          >
+            <Info className="w-3.5 h-3.5 text-[#85866B]" /> What is this?
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              registerUserInteraction();
+              setActiveModal('why');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#FFFDF8] text-[#302F29] border border-[#E4DED2] rounded hover:border-[#C5AD82] hover:bg-[#FBF9F4] transition-colors shadow-xs"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#85866B]" /> Why is this important?
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              registerUserInteraction();
+              setActiveModal('components');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#FFFDF8] text-[#302F29] border border-[#E4DED2] rounded hover:border-[#C5AD82] hover:bg-[#FBF9F4] transition-colors shadow-xs"
+          >
+            <Box className="w-3.5 h-3.5 text-[#85866B]" /> Explore components
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              registerUserInteraction();
+              setAutoTourEnabled((prev) => !prev);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded border transition-colors shadow-xs ${
+              autoTourEnabled
+                ? 'bg-[#FBF9F4] text-[#85866B] border-[#C5AD82]/50 font-medium'
+                : 'bg-[#FFFDF8] text-[#77746B] border-[#E4DED2]'
+            }`}
+            title="Toggle automated camera and assembly tour"
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Tour: {autoTourEnabled ? 'Auto ON' : 'Paused'}</span>
+          </button>
+
           {embedded ? (
             <Link
               to="/app/topology"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[#FFFFFF] text-[#20241F] border border-[#DEDDD5] rounded hover:border-[#244C3A] transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#302F29] text-[#FFFDF8] rounded hover:bg-[#414B38] transition-colors shadow-xs"
             >
-              <Maximize2 className="w-3.5 h-3.5 text-[#244C3A]" /> Fullscreen 3D Inspector
+              <Maximize2 className="w-3.5 h-3.5" /> Fullscreen 3D
             </Link>
           ) : (
             <Link
               to="/app"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-[#244C3A] text-white rounded hover:bg-[#193B2C] transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-[#302F29] text-[#FFFDF8] rounded hover:bg-[#414B38] transition-colors shadow-xs"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> Return to Workspace
             </Link>
@@ -978,9 +1161,9 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
         </div>
       </div>
 
-      {/* Unified Collapsible Bottom Control Dock (Zero Side-Panel Clutter, No Backdrop-Filter over WebGL) */}
+      {/* Unified Collapsible Bottom Control Dock */}
       <div
-        className="absolute inset-x-0 mx-auto bottom-4 z-20 w-[min(920px,94vw)] transition-transform duration-300"
+        className="absolute inset-x-0 mx-auto bottom-4 z-20 w-[min(940px,94vw)] transition-transform duration-300"
         style={{
           transform: dockCollapsed ? 'translateY(calc(100% - 34px))' : 'translateY(0)',
         }}
@@ -989,27 +1172,27 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
           <button
             type="button"
             onClick={() => setDockCollapsed((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-mono bg-[#FFFFFF] text-[#20241F] border border-[#DEDDD5] rounded-t shadow-xs hover:bg-[#F0EFE9] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-mono bg-[#FFFDF8] text-[#302F29] border border-[#E4DED2] rounded-t shadow-xs hover:bg-[#FBF9F4] transition-colors"
             title="Toggle Control Dock (Shortcut: H)"
           >
             {dockCollapsed ? (
               <>
-                <ChevronUp className="w-3.5 h-3.5 text-[#244C3A]" /> Show 3D Controls (H)
+                <ChevronUp className="w-3.5 h-3.5 text-[#85866B]" /> Show 3D Controls (H)
               </>
             ) : (
               <>
-                <ChevronDown className="w-3.5 h-3.5 text-[#686B65]" /> Hide Controls (H)
+                <ChevronDown className="w-3.5 h-3.5 text-[#77746B]" /> Hide Controls (H)
               </>
             )}
           </button>
         </div>
 
-        <div className="bg-[#FFFFFF] border border-[#DEDDD5] rounded px-4 py-3 shadow-sm">
+        <div className="bg-[#FFFDF8] border border-[#E4DED2] rounded px-4 py-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Camera View Presets */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#686B65] mr-1 flex items-center gap-1">
-                <Compass className="w-3.5 h-3.5 text-[#244C3A]" /> Camera:
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#77746B] mr-1 flex items-center gap-1">
+                <Compass className="w-3.5 h-3.5 text-[#85866B]" /> Camera:
               </span>
               {(Object.keys(CAMERA_PRESETS) as CameraPresetKey[]).map((key) => (
                 <button
@@ -1018,8 +1201,8 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
                   onClick={() => handleSelectPreset(key)}
                   className={`px-2.5 py-1 text-xs font-medium rounded border transition-colors ${
                     activePreset === key
-                      ? 'bg-[#244C3A] text-white border-[#244C3A]'
-                      : 'bg-[#F7F6F2] text-[#20241F] border-[#DEDDD5] hover:bg-[#E9E7DF]'
+                      ? 'bg-[#302F29] text-[#FFFDF8] border-[#302F29]'
+                      : 'bg-[#FBF9F4] text-[#302F29] border-[#E4DED2] hover:bg-[#ECE7DC]'
                   }`}
                 >
                   {CAMERA_PRESETS[key].label}
@@ -1031,9 +1214,9 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
             <div className="flex items-center gap-2.5">
               <label
                 htmlFor="weave-exploded-slider"
-                className="text-[11px] font-mono uppercase tracking-wider text-[#686B65] flex items-center gap-1"
+                className="text-[11px] font-mono uppercase tracking-wider text-[#77746B] flex items-center gap-1"
               >
-                <Layers className="w-3.5 h-3.5 text-[#244C3A]" /> Exploded Assembly:
+                <Layers className="w-3.5 h-3.5 text-[#85866B]" /> Exploded Assembly:
               </label>
               <input
                 id="weave-exploded-slider"
@@ -1042,78 +1225,257 @@ export const WeaveSpatialScene: React.FC<WeaveSpatialSceneProps> = ({ embedded =
                 max={1}
                 step={0.02}
                 value={explodedFactor}
-                onChange={(e) => setExplodedFactor(parseFloat(e.target.value))}
-                className="w-24 accent-[#244C3A] cursor-pointer"
+                onChange={(e) => {
+                  registerUserInteraction();
+                  setExplodedFactor(parseFloat(e.target.value));
+                }}
+                className="w-24 accent-[#C5AD82] cursor-pointer"
               />
-              <span className="text-xs font-mono text-[#20241F] w-9 text-right">
+              <span className="text-xs font-mono text-[#302F29] w-9 text-right">
                 {Math.round(explodedFactor * 100)}%
               </span>
             </div>
 
-            {/* Record Flow Playback Controls */}
+            {/* Controls & Reset */}
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setIsPaused((p) => !p)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-[#DEDDD5] bg-[#F7F6F2] text-[#20241F] hover:bg-[#E9E7DF] transition-colors"
+                onClick={() => {
+                  registerUserInteraction();
+                  setIsPaused((p) => !p);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-[#E4DED2] bg-[#FBF9F4] text-[#302F29] hover:bg-[#ECE7DC] transition-colors"
               >
                 {isPaused ? (
                   <>
-                    <Play className="w-3.5 h-3.5 text-[#244C3A]" /> Resume Flow
+                    <Play className="w-3.5 h-3.5 text-[#85866B]" /> Resume Flow
                   </>
                 ) : (
                   <>
-                    <Pause className="w-3.5 h-3.5 text-[#686B65]" /> Pause Flow
+                    <Pause className="w-3.5 h-3.5 text-[#77746B]" /> Pause Flow
                   </>
                 )}
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setExplodedFactor(0);
-                  handleSelectPreset('overview');
-                  setSelectedNodeId('VAULT-CORE');
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-[#DEDDD5] bg-[#FFFFFF] text-[#686B65] hover:text-[#20241F] transition-colors"
+                onClick={handleResetView}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-[#E4DED2] bg-[#FFFDF8] text-[#77746B] hover:text-[#302F29] transition-colors"
                 title="Reset Camera and Assembly"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
+                <RotateCcw className="w-3.5 h-3.5" /> Reset view
               </button>
             </div>
           </div>
 
           {/* Node Quick-Select Bar */}
-          <div className="mt-2.5 pt-2 border-t border-[#F0EFE9] flex items-center justify-between flex-wrap gap-2">
+          <div className="mt-2.5 pt-2 border-t border-[#ECE7DC] flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#686B65] flex items-center gap-1 mr-1">
-                <Box className="w-3 h-3 text-[#244C3A]" /> Inspect Node:
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#77746B] flex items-center gap-1 mr-1">
+                <Box className="w-3 h-3 text-[#85866B]" /> Inspect Node:
               </span>
               {Object.keys(NODE_TELEMETRY).map((nodeKey) => (
                 <button
                   key={nodeKey}
                   type="button"
                   onClick={() => {
+                    registerUserInteraction();
                     setSelectedNodeId(nodeKey);
                     if (nodeKey === 'VAULT-CORE') handleSelectPreset('vault');
                     else handleSelectPreset('gateways');
                   }}
                   className={`px-2 py-0.5 text-[11px] font-mono rounded border transition-colors ${
                     selectedNodeId === nodeKey
-                      ? 'bg-[#EAF2EE] text-[#1E563B] border-[#1E563B]/40 font-semibold'
-                      : 'bg-[#F7F6F2] text-[#686B65] border-[#DEDDD5] hover:text-[#20241F]'
+                      ? 'bg-[#FBF9F4] text-[#85866B] border-[#C5AD82]/50 font-semibold'
+                      : 'bg-[#FFFDF8] text-[#77746B] border-[#E4DED2] hover:text-[#302F29]'
                   }`}
                 >
                   {nodeKey}
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 text-[11px] font-mono text-[#686B65]">
-              <Sliders className="w-3 h-3 text-[#244C3A]" />
-              <span>Click any 3D structure to inspect · Drag to orbit</span>
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[#77746B]">
+              <Sliders className="w-3 h-3 text-[#85866B]" />
+              <span>Click any 3D node · Drag to orbit · Scroll to zoom</span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Interactive Explanatory Modals */}
+      {activeModal !== 'none' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
+          onClick={() => setActiveModal('none')}
+        >
+          <div
+            className="bg-[#FFFDF8] border border-[#E4DED2] rounded-md shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-5 text-[#302F29]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E4DED2]">
+              <div className="flex items-center gap-2.5">
+                {activeModal === 'what' && <Info className="w-5 h-5 text-[#85866B]" />}
+                {activeModal === 'why' && <HelpCircle className="w-5 h-5 text-[#85866B]" />}
+                {activeModal === 'components' && <Box className="w-5 h-5 text-[#85866B]" />}
+                <h3 className="text-base font-semibold text-[#302F29]">
+                  {activeModal === 'what' && 'What is the WEAVE 3D Apparatus?'}
+                  {activeModal === 'why' && 'Why is this Architecture Important?'}
+                  {activeModal === 'components' && 'Explore WEAVE Architecture Components'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal('none')}
+                className="p-1 rounded text-[#77746B] hover:text-[#302F29] hover:bg-[#FBF9F4]"
+                aria-label="Close dialog"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body: What is this? */}
+            {activeModal === 'what' && (
+              <div className="space-y-4 text-xs leading-relaxed text-[#5A5850]">
+                <p>
+                  The **WEAVE 3D Apparatus** is a physical-digital architectural simulation of the
+                  APAAR student identity and institutional verification infrastructure developed for
+                  Smart India Hackathon problem statement **SIH26263**.
+                </p>
+                <p>
+                  Rather than presenting abstract tables alone, this apparatus models the live interaction
+                  between decentralized engineering institutes, cryptographic attestation vaults,
+                  streaming verification pipelines, and regulatory oversight gateways.
+                </p>
+                <div className="p-3.5 bg-[#FBF9F4] border border-[#E4DED2] rounded space-y-2">
+                  <span className="font-semibold text-[#302F29] font-mono uppercase text-[11px]">
+                    What you are seeing in real-time:
+                  </span>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li><strong>Decentralized Campus Nodes:</strong> Each peripheral station represents an AICTE technical institution ingesting student batches.</li>
+                    <li><strong>Streaming Record Conduits:</strong> Data packets represent student records undergoing deterministic verification (STU-001 through STU-006).</li>
+                    <li><strong>Central Cryptographic Core:</strong> The rotating vault where Ed25519 signatures and SHA-256 Merkle hashes are sealed.</li>
+                    <li><strong>Exploded Assembly View:</strong> Reveals internal architectural layers from the ground ledger to the upper policy crown.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Body: Why is this important? */}
+            {activeModal === 'why' && (
+              <div className="space-y-4 text-xs leading-relaxed text-[#5A5850]">
+                <p>
+                  Academic record governance across technical education in India has historically suffered
+                  from three major vulnerabilities that this architecture directly solves:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3.5 bg-[#FBF9F4] border border-[#E4DED2] rounded space-y-1">
+                    <span className="font-semibold text-[#302F29]">1. Multi-Tenant Privacy Isolation</span>
+                    <p className="text-[11px] text-[#77746B]">Colleges cannot inspect each other's raw rosters or student details. Cross-institution matching uses salted SHA-256 digests.</p>
+                  </div>
+                  <div className="p-3.5 bg-[#FBF9F4] border border-[#E4DED2] rounded space-y-1">
+                    <span className="font-semibold text-[#302F29]">2. Counselling Collision Detection</span>
+                    <p className="text-[11px] text-[#77746B]">Detects concurrent duplicate seat allocations across institutions without waiting for annual end-of-year audits.</p>
+                  </div>
+                  <div className="p-3.5 bg-[#FBF9F4] border border-[#E4DED2] rounded space-y-1">
+                    <span className="font-semibold text-[#302F29]">3. Offline Cryptographic Verification</span>
+                    <p className="text-[11px] text-[#77746B]">Employers and scholarship bodies can mathematically verify records with Ed25519 signatures without connecting to live databases.</p>
+                  </div>
+                  <div className="p-3.5 bg-[#FBF9F4] border border-[#E4DED2] rounded space-y-1">
+                    <span className="font-semibold text-[#302F29]">4. Approved Intake Oversight</span>
+                    <p className="text-[11px] text-[#77746B]">Prevents over-enrolment past AICTE-sanctioned capacity in real time, upholding educational standards.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Body: Explore components */}
+            {activeModal === 'components' && (
+              <div className="space-y-4 text-xs">
+                {/* Component Select Chips */}
+                <div className="flex flex-wrap gap-1.5 pb-2 border-b border-[#E4DED2]">
+                  {APPARATUS_COMPONENTS.map((comp) => (
+                    <button
+                      key={comp.id}
+                      type="button"
+                      onClick={() => setSelectedComponentId(comp.id)}
+                      className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
+                        selectedComponentId === comp.id
+                          ? 'bg-[#302F29] text-[#FFFDF8] font-medium'
+                          : 'bg-[#FBF9F4] text-[#302F29] border border-[#E4DED2] hover:bg-[#ECE7DC]'
+                      }`}
+                    >
+                      {comp.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected Component Card */}
+                {(() => {
+                  const comp =
+                    APPARATUS_COMPONENTS.find((c) => c.id === selectedComponentId) ||
+                    APPARATUS_COMPONENTS[0];
+                  return (
+                    <div className="space-y-3 p-4 bg-[#FBF9F4] border border-[#E4DED2] rounded">
+                      <div>
+                        <div className="text-[11px] font-mono text-[#85866B] uppercase font-semibold">
+                          Component ID: {comp.id}
+                        </div>
+                        <h4 className="text-sm font-semibold text-[#302F29] mt-0.5">{comp.name}</h4>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <span className="font-semibold text-[#302F29]">Role: </span>
+                          <span className="text-[#5A5850]">{comp.role}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-[#302F29]">Inputs: </span>
+                          <span className="text-[#5A5850]">{comp.inputs}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-[#302F29]">Outputs: </span>
+                          <span className="text-[#5A5850]">{comp.outputs}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-[#302F29]">Relationships: </span>
+                          <span className="text-[#5A5850]">{comp.relationships}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#E4DED2] flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-[#77746B]">Preset Camera: {comp.cameraPreset}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSelectPreset(comp.cameraPreset);
+                            setActiveModal('none');
+                          }}
+                          className="px-3 py-1 bg-[#302F29] text-[#FFFDF8] text-xs font-semibold rounded hover:bg-[#414B38] transition-colors shadow-sm"
+                        >
+                          Focus in 3D Scene
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-[#E4DED2] flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setActiveModal('none')}
+                className="px-4 py-1.5 text-xs font-medium text-[#302F29] bg-[#FBF9F4] border border-[#E4DED2] rounded hover:bg-[#ECE7DC]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -116,7 +116,7 @@ export const IntakeMonitoringPage: React.FC = () => {
         </div>
         <div className="p-5 bg-white border border-[#DEDDD5] rounded-md">
           <div className="text-xs font-sans text-[#686B65]">Utilization Percentage</div>
-          <div className="text-2xl font-semibold text-[#244C3A] mt-1">{overallPct}%</div>
+          <div className="text-2xl font-semibold text-[#9B7B32] mt-1">{overallPct}%</div>
         </div>
       </div>
 
@@ -142,7 +142,7 @@ export const IntakeMonitoringPage: React.FC = () => {
               <YAxis tick={{ fill: '#686B65', fontSize: 11, fontFamily: 'JetBrains Mono' }} />
               <Tooltip />
               <Bar dataKey="Approved" fill="#E9E7DF" stroke="#686B65" />
-              <Bar dataKey="Enrolled" fill="#244C3A" />
+              <Bar dataKey="Enrolled" fill="#C5A869" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -193,7 +193,7 @@ export const IntakeMonitoringPage: React.FC = () => {
                     )}
                     <Link
                       to="/app/students"
-                      className="text-[#244C3A] underline font-medium"
+                      className="text-[#9B7B32] hover:text-[#181B18] underline font-medium"
                     >
                       Records
                     </Link>
@@ -235,7 +235,7 @@ export const InstitutionsPage: React.FC = () => {
         >
           <div className="flex items-start justify-between gap-2 pb-3 border-b border-[#DEDDD5]">
             <div>
-              <div className="font-mono text-xs text-[#244C3A] font-semibold">
+              <div className="font-mono text-xs text-[#9B7B32] font-semibold">
                 {inst.id} · {inst.aicte_code}
               </div>
               <h2 className="mt-1 font-display text-base font-semibold text-[#20241F]">
