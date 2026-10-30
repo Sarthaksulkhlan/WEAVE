@@ -1,22 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
-  ShieldCheck,
   FileCheck2,
   Lock,
   Building2,
   Scale,
-  Box,
-  Play,
-  Pause,
   MessageSquare,
   Sparkles,
 } from 'lucide-react';
 import { WeaveLogo } from '../../components/ui/WeaveLogo';
-import { WeaveSpatialScene } from '../spatial/WeaveSpatialScene';
+import { TypewriterHeadline } from '../../components/ui/PortalEnhancements';
 import { HeroBackgroundCanvas } from './components/HeroBackgroundCanvas';
 import { LivePipelineStrata } from './components/LivePipelineStrata';
 
@@ -26,47 +20,14 @@ export const LandingPage: React.FC = () => {
     'institution' | 'regulator' | 'verification'
   >('institution');
 
-  // Hero Experience: Defaults to 3D apparatus, alternates every 10 seconds with Live Pipeline
-  const [heroViewMode, setHeroViewMode] = useState<'3d' | 'editorial'>('3d');
-  const [autoAlternate, setAutoAlternate] = useState<boolean>(true);
-  const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
-  const [pipelinePlaying, setPipelinePlaying] = useState<boolean>(true);
-  const lastUserSwitchRef = useRef<number>(Date.now());
-
-  // 10-Second Automatic Alternating Hero Loop
-  useEffect(() => {
-    if (!autoAlternate) return;
-    const interval = window.setInterval(() => {
-      const idleMs = Date.now() - lastUserSwitchRef.current;
-      if (idleMs < 9000) return; // User manually interacted recently
-      setHeroViewMode((prev) => (prev === '3d' ? 'editorial' : '3d'));
-    }, 10000);
-    return () => window.clearInterval(interval);
-  }, [autoAlternate]);
-
-  const handleModeSwitch = (mode: '3d' | 'editorial') => {
-    lastUserSwitchRef.current = Date.now();
-    setHeroViewMode(mode);
-  };
-
-  useEffect(() => {
-    if (!pipelinePlaying || heroViewMode !== 'editorial') return;
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) return;
-    const timer = window.setInterval(() => {
-      setActiveStageIdx((prev) => (prev + 1) % 4);
-    }, 2400);
-    return () => window.clearInterval(timer);
-  }, [pipelinePlaying, heroViewMode]);
-
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F1E8] text-[#302F29]">
       {/* Top Bar: Institutional Navigation */}
       <header className="sticky top-0 z-40 bg-[#FFFDF8]/90 backdrop-blur-md border-b border-[#E4DED2] text-[#302F29]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
-          <Link to="/" aria-label="WEAVE Home" className="shrink-0 flex items-center gap-3">
+          <Link to="/" aria-label="EduVerify Home" className="shrink-0 flex items-center gap-3">
             <WeaveLogo />
-            <span className="hidden sm:inline-block font-mono text-[10px] tracking-widest uppercase text-[#85866B] border-l border-[#E4DED2] pl-3">
+            <span className="hidden sm:inline-block font-mono text-[10px] tracking-widest uppercase text-[#8C6D2E] border-l border-[#DFD5C2] pl-3">
               SIH26263
             </span>
           </Link>
@@ -94,20 +55,6 @@ export const LandingPage: React.FC = () => {
               Security &amp; Trust
             </a>
             <Link
-              to="/app/assistant"
-              className="inline-flex items-center gap-1.5 text-[#85866B] hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0 font-medium"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>WEAVE Assistant</span>
-            </Link>
-            <Link
-              to="/app/topology"
-              className="inline-flex items-center gap-1.5 text-[#77746B] hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>3D Topology</span>
-            </Link>
-            <Link
               to="/login"
               className="hover:text-[#302F29] transition-colors whitespace-nowrap shrink-0"
             >
@@ -115,138 +62,121 @@ export const LandingPage: React.FC = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Link
-              to="/app"
-              className="px-4 py-2 text-xs font-semibold text-[#FFFDF8] bg-[#302F29] hover:bg-[#414B38] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm"
+              to="/login"
+              className="px-3.5 py-2 text-xs font-semibold text-[#23201B] bg-[#FFFDF9] border border-[#D8CEB8] hover:bg-[#F5EFE2] rounded-md transition-colors whitespace-nowrap shrink-0"
             >
-              Open workspace
+              Student / Admin Login
+            </Link>
+            <Link
+              to="/admin/dashboard"
+              className="px-4 py-2 text-xs font-semibold text-[#FFFDF9] bg-[#23201B] hover:bg-[#38332B] border border-[#B88938]/40 rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm"
+            >
+              AICTE Admin Console
             </Link>
           </div>
         </div>
       </header>
 
       <main className="flex-1">
-        {/* Light Cream Minimal Editorial Hero Section with Subtle Background Canvas */}
-        <section className="relative bg-[#F5F1E8] text-[#302F29] border-b border-[#E4DED2] overflow-hidden py-14 lg:py-20">
+        {/* Golden & Champagne Sunlit Editorial Hero Section with Continuous Live Background Canvas */}
+        <section
+          className="relative text-[#23201B] border-b border-[#DFD5C2] overflow-hidden py-14 lg:py-20"
+          style={{
+            background:
+              'radial-gradient(circle at 18% 22%, rgba(212, 175, 55, 0.16) 0%, rgba(197, 160, 89, 0.08) 38%, rgba(246, 241, 231, 0.98) 78%), linear-gradient(135deg, #FAF6EC 0%, #F4EDE0 52%, #EFE6D5 100%)',
+          }}
+        >
           <HeroBackgroundCanvas />
+
+          {/* Ambient Golden & Champagne Light Halo Overlays */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-50"
+            style={{
+              background: 'radial-gradient(circle, rgba(212,175,55,0.28) 0%, rgba(212,175,55,0) 70%)',
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-28 right-1/4 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-45"
+            style={{
+              background: 'radial-gradient(circle, rgba(197,160,89,0.24) 0%, rgba(197,160,89,0) 72%)',
+            }}
+          />
 
           <div className="relative z-10 max-w-6xl mx-auto px-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
               {/* Left Column: Hero Editorial Headline & CTAs */}
               <div className="lg:col-span-5 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FFFDF8] border border-[#E4DED2] text-[#85866B] text-[11px] font-mono uppercase tracking-widest shadow-2xs">
-                  <Sparkles className="w-3 h-3 text-[#85866B]" />
-                  <span>ACADEMIC RECORDS · INSTITUTIONAL TRUST</span>
+                {/* Golden Champagne Editorial Eyebrow Card */}
+                <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-md bg-gradient-to-r from-[#FFFDF9] via-[#FAF3E3] to-[#F5E9CE] border border-[#D4AF37]/45 text-[#7A5B20] text-[11px] font-mono uppercase tracking-[0.16em] shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-[#B88938] animate-ping" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#B88938]" />
+                  <span className="font-semibold">ACADEMIC RECORDS · INSTITUTIONAL TRUST</span>
                 </div>
 
-                <h1
-                  className="font-display font-bold text-[#302F29] tracking-tight leading-[1.08]"
-                  style={{ fontSize: 'clamp(2.25rem, 3.8vw, 3.4rem)', textWrap: 'balance' }}
-                >
-                  Every academic record. A clearer path to trust.
-                </h1>
+                {/* Typewriter Hero Headline in Typewriter Font */}
+                <div className="min-h-[132px] sm:min-h-[148px] flex items-center">
+                  <h1
+                    className="font-mono font-bold text-[#23201B] tracking-tight leading-[1.14]"
+                    style={{ fontSize: 'clamp(1.85rem, 3.1vw, 2.75rem)' }}
+                  >
+                    <TypewriterHeadline
+                      phrases={[
+                        'Every academic record. A clearer path to trust.',
+                        'Verified APAAR identities. Zero institutional silos.',
+                        'Deterministic intake governance. Tamper-evident trust.',
+                        'One national ledger. Instant cryptographic verification.',
+                      ]}
+                    />
+                  </h1>
+                </div>
 
-                <p className="text-base sm:text-lg text-[#77746B] leading-relaxed max-w-xl">
-                  Bring student records, validation, enrolment oversight and authorized verification
-                  into one coherent platform.
+                <p className="text-base sm:text-lg text-[#5C564C] leading-relaxed max-w-xl">
+                  Bring student records, deterministic APAAR validation, sanctioned intake oversight,
+                  and cryptographic verification into one coherent institutional platform.
                 </p>
 
                 {/* Primary CTAs */}
                 <div className="pt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => navigate('/app')}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#FFFDF8] bg-[#302F29] hover:bg-[#414B38] rounded-md transition-all whitespace-nowrap shrink-0 shadow-sm"
+                    onClick={() => navigate('/login')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#FFFDF9] bg-[#23201B] hover:bg-[#38332B] border border-[#B88938]/50 rounded-md transition-all whitespace-nowrap shrink-0 shadow-sm cursor-pointer"
                   >
-                    <span>Explore WEAVE</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Sign In (Student / Admin)</span>
+                    <ArrowRight className="w-4 h-4 text-[#D4AF37]" />
                   </button>
                   <Link
-                    to="/app"
-                    className="px-5 py-2.5 text-sm font-medium text-[#302F29] bg-[#FFFDF8] border border-[#E4DED2] hover:bg-[#FAF8F3] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+                    to="/admin/dashboard"
+                    className="px-4 py-2.5 text-sm font-semibold text-[#23201B] bg-[#FFFDF9]/95 border border-[#D5C7AA] hover:bg-[#FAF3E3] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
                   >
-                    Open workspace
+                    AICTE Admin Console
                   </Link>
                   <Link
-                    to="/app/assistant"
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#85866B] bg-[#FFFDF8] border border-[#E4DED2] hover:border-[#85866B] hover:bg-[#FAF8F3] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+                    to="/admin/assistant"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-[#7A5B20] bg-[#FAF3E3]/90 border border-[#D4AF37]/40 hover:border-[#B88938] hover:bg-[#F5E9CE] rounded-md transition-colors whitespace-nowrap shrink-0 shadow-2xs"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <MessageSquare className="w-4 h-4 text-[#B88938]" />
                     <span>Ask Assistant</span>
                   </Link>
                 </div>
 
                 {/* Institutional Trust Badges */}
-                <div className="pt-4 border-t border-[#E4DED2] text-xs text-[#77746B] flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
-                  <span>SIH26263 Reference Implementation</span>
-                  <span aria-hidden="true" className="text-[#85866B]">·</span>
+                <div className="pt-4 border-t border-[#DFD5C2] text-xs text-[#696358] flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
+                  <span className="text-[#7A5B20] font-semibold">SIH26263 Reference Implementation</span>
+                  <span aria-hidden="true" className="text-[#B88938]">·</span>
                   <span>Masked APAAR Storage</span>
-                  <span aria-hidden="true" className="text-[#85866B]">·</span>
+                  <span aria-hidden="true" className="text-[#B88938]">·</span>
                   <span>Deterministic Rule Engine</span>
                 </div>
               </div>
 
-              {/* Right Column: 10-Second Alternating Visualization Container */}
+              {/* Right Column: Live Pipeline Semantic Visualization */}
               <div className="lg:col-span-7">
-                {/* Switcher Bar with 10s Timer Indicator */}
-                <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
-                  <div className="inline-flex items-center p-0.5 bg-[#FFFDF8] border border-[#E4DED2] rounded-md text-xs shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => handleModeSwitch('3d')}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-medium transition-colors ${
-                        heroViewMode === '3d'
-                          ? 'bg-[#302F29] text-[#FFFDF8] font-semibold shadow-xs'
-                          : 'text-[#77746B] hover:text-[#302F29]'
-                      }`}
-                    >
-                      <Box className="w-3.5 h-3.5" />
-                      <span>Interactive 3D Apparatus</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleModeSwitch('editorial')}
-                      className={`px-3 py-1.5 rounded font-medium transition-colors ${
-                        heroViewMode === 'editorial'
-                          ? 'bg-[#302F29] text-[#FFFDF8] font-semibold shadow-xs'
-                          : 'text-[#77746B] hover:text-[#302F29]'
-                      }`}
-                    >
-                      Live Pipeline Schematic
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setAutoAlternate((prev) => !prev)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono text-[#77746B] hover:text-[#302F29] bg-[#FFFDF8] border border-[#E4DED2] rounded shadow-2xs transition-colors"
-                      title="Pause or resume the 10-second automatic view alternation"
-                    >
-                      {autoAlternate ? (
-                        <>
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#85866B] animate-pulse" />
-                          <span>Alternates 10s (Auto ON)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Pause className="w-3 h-3 text-[#85866B]" />
-                          <span>Auto Paused</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Alternating View Body */}
-                <div className="relative rounded-xl border border-[#E4DED2] shadow-sm overflow-hidden bg-[#FFFDF8]">
-                  {heroViewMode === '3d' ? (
-                    <WeaveSpatialScene embedded />
-                  ) : (
-                    <LivePipelineStrata />
-                  )}
-                </div>
+                <LivePipelineStrata />
               </div>
             </div>
           </div>
@@ -308,7 +238,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section B — How WEAVE Works */}
+        {/* Section B — How EduVerify Works */}
         <section id="how-it-works" className="bg-[#FBF9F4] border-b border-[#E4DED2] py-16 lg:py-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="max-w-2xl">

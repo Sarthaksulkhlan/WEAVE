@@ -221,12 +221,12 @@ export const AssistantPage: React.FC = () => {
       query: 'Initial Initialization',
       categoryLabel: 'Offline System Knowledge Base',
       text:
-        `Welcome to the **WEAVE Institutional Knowledge Assistant** for SIH26263.\n\n` +
+        `Welcome to the **EduVerify Institutional Knowledge Assistant** for SIH26263.\n\n` +
         `This assistant is 100% offline-first and rule-based, containing verified documentation on **deterministic validation rules** (STU-001 through STU-006), **cross-institution duplicate reviews**, **AICTE intake monitoring**, and **Ed25519 cryptographic attestations**.\n\n` +
         `Choose a topic category, search below, or click any suggested question chip to explore.`,
       confidence: 100,
       followUps: [
-        'What is WEAVE?',
+        'What is EduVerify?',
         'How does duplicate detection work?',
         'What is approved intake monitoring?',
         'What are the 6 student validation rules?',
@@ -235,7 +235,6 @@ export const AssistantPage: React.FC = () => {
         { label: 'Validation Ruleset Catalog', route: '/app/audit' },
         { label: 'Approved Intake Monitoring', route: '/app/intake' },
         { label: 'Duplicate Review Queue', route: '/app/duplicates' },
-        { label: '3D Spatial Apparatus', route: '/app/topology' },
       ],
       timestamp: 'System Ready',
     },
@@ -321,7 +320,7 @@ export const AssistantPage: React.FC = () => {
           <ShieldCheck className="w-4 h-4 text-[#9B7B32] shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <div className="font-semibold text-[#20241F]">
-              WEAVE Deterministic Institutional Assistant (SIH26263)
+              EduVerify Deterministic Institutional Assistant (SIH26263)
             </div>
             <p className="text-[#686B65]">
               Operates 100% locally on curated rulebooks and database schemas. Zero LLM API calls,
@@ -445,7 +444,7 @@ export const AssistantPage: React.FC = () => {
                     <span>
                       {msg.role === 'user'
                         ? `${user.name} (${user.role})`
-                        : `WEAVE Knowledge · ${msg.categoryLabel || 'Rulebook'}`}
+                        : `EduVerify Knowledge · ${msg.categoryLabel || 'Rulebook'}`}
                     </span>
                     <span>{msg.timestamp}</span>
                   </div>
@@ -512,7 +511,7 @@ export const AssistantPage: React.FC = () => {
             >
               <input
                 type="text"
-                aria-label="Ask a question about WEAVE"
+                aria-label="Ask a question about EduVerify"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Type your question (e.g. 'How does rule STU-005 detect conflicts?')..."

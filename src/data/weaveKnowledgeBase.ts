@@ -1,5 +1,5 @@
 /**
- * WEAVE Curated Hardcoded Knowledge Base (SIH26263)
+ * EduVerify Curated Hardcoded Knowledge Base (SIH26263)
  * Offline-first, deterministic question answering with zero external LLM / API key dependencies.
  */
 
@@ -24,13 +24,13 @@ export interface KnowledgeEntry {
 
 export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
   // ==========================================
-  // Category 1 — Understanding WEAVE
+  // Category 1 — Understanding EduVerify
   // ==========================================
   {
     id: 'und-01',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
-    canonicalQuestion: 'What is WEAVE?',
+    categoryLabel: 'Understanding EduVerify',
+    canonicalQuestion: 'What is EduVerify?',
     synonyms: [
       'what is weave',
       'about weave',
@@ -39,19 +39,19 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'overview of weave',
     ],
     answer:
-      'WEAVE is an institutional student data management and record verification platform designed for Smart India Hackathon problem statement SIH26263. It connects AICTE-approved technical institutions, regulators, and authorized verification workflows to ensure academic records are consistent, deduplicated, and cryptographically verifiable.',
+      'EduVerify is an institutional student data management and record verification platform designed for Smart India Hackathon problem statement SIH26263. It connects AICTE-approved technical institutions, regulators, and authorized verification workflows to ensure academic records are consistent, deduplicated, and cryptographically verifiable.',
     relatedIds: ['und-02', 'und-03', 'und-05'],
     followUpQuestions: [
-      'What problem does WEAVE solve?',
+      'What problem does EduVerify solve?',
       'What does "academic records connected by trust" mean?',
-      'Who uses WEAVE?',
+      'Who uses EduVerify?',
     ],
   },
   {
     id: 'und-02',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
-    canonicalQuestion: 'What problem does WEAVE solve?',
+    categoryLabel: 'Understanding EduVerify',
+    canonicalQuestion: 'What problem does EduVerify solve?',
     synonyms: [
       'problem statement',
       'why weave',
@@ -71,7 +71,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     id: 'und-03',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
+    categoryLabel: 'Understanding EduVerify',
     canonicalQuestion: 'What is SIH26263?',
     synonyms: [
       'sih problem',
@@ -84,15 +84,15 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'SIH26263 is a Smart India Hackathon problem statement focused on developing an APAAR-based student data management, intake tracking, and record verification platform for AICTE-approved institutions.',
     relatedIds: ['und-01', 'und-04'],
     followUpQuestions: [
-      'Does WEAVE directly connect to government APAAR servers?',
-      'Who uses WEAVE?',
+      'Does EduVerify directly connect to government APAAR servers?',
+      'Who uses EduVerify?',
     ],
   },
   {
     id: 'und-04',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
-    canonicalQuestion: 'Who uses WEAVE?',
+    categoryLabel: 'Understanding EduVerify',
+    canonicalQuestion: 'Who uses EduVerify?',
     synonyms: [
       'user roles',
       'target audience',
@@ -101,7 +101,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'user personas',
     ],
     answer:
-      'WEAVE is built for five distinct institutional and regulatory user personas:\n- **Institution Operators:** Upload CSV rosters, inspect row-level format errors, and review batch diagnostics.\n- **Institution Administrators:** Commit eligible batch rows and issue signed Ed25519 student enrolment attestations.\n- **Regulator Officers:** Adjudicate cross-institution APAAR duplicate candidates with documented decision histories.\n- **Regulator Directorate Admins:** Oversee national intake caps, monitor compliance across institutions, and govern program registries.\n- **Auditors:** Inspect tamper-evident SHA-256 hash chains and cryptographic verification logs.',
+      'EduVerify is built for five distinct institutional and regulatory user personas:\n- **Institution Operators:** Upload CSV rosters, inspect row-level format errors, and review batch diagnostics.\n- **Institution Administrators:** Commit eligible batch rows and issue signed Ed25519 student enrolment attestations.\n- **Regulator Officers:** Adjudicate cross-institution APAAR duplicate candidates with documented decision histories.\n- **Regulator Directorate Admins:** Oversee national intake caps, monitor compliance across institutions, and govern program registries.\n- **Auditors:** Inspect tamper-evident SHA-256 hash chains and cryptographic verification logs.',
     relatedIds: ['dash-04', 'dash-05', 'dash-06'],
     followUpQuestions: [
       'What is the difference between an institution operator and an administrator?',
@@ -111,8 +111,8 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     id: 'und-05',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
-    canonicalQuestion: 'What makes WEAVE different from a spreadsheet or SIS?',
+    categoryLabel: 'Understanding EduVerify',
+    canonicalQuestion: 'What makes EduVerify different from a spreadsheet or SIS?',
     synonyms: [
       'how is this different from excel',
       'why not use excel',
@@ -120,17 +120,17 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'why weave over erp',
     ],
     answer:
-      'Unlike isolated spreadsheets or generic ERPs, WEAVE enforces:\n1. **Deterministic rulesets:** Immediate verification against sanctioned AICTE program codes and format rules.\n2. **Privacy by design:** Automated masking (`****-****-XXXX`) and salted SHA-256 hashing so raw APAARs are never stored in plaintext.\n3. **Cross-institutional conflict queues:** Automatic discovery of students enrolled at two competing campuses without sharing sensitive student profiles.\n4. **Verifiable credentials:** Ed25519 digitally signed attestations that third parties can verify without database access.',
+      'Unlike isolated spreadsheets or generic ERPs, EduVerify enforces:\n1. **Deterministic rulesets:** Immediate verification against sanctioned AICTE program codes and format rules.\n2. **Privacy by design:** Automated masking (`****-****-XXXX`) and salted SHA-256 hashing so raw APAARs are never stored in plaintext.\n3. **Cross-institutional conflict queues:** Automatic discovery of students enrolled at two competing campuses without sharing sensitive student profiles.\n4. **Verifiable credentials:** Ed25519 digitally signed attestations that third parties can verify without database access.',
     relatedIds: ['val-01', 'dup-01', 'ver-01'],
     followUpQuestions: [
-      'What is data validation in WEAVE?',
+      'What is data validation in EduVerify?',
       'How does student-record verification work?',
     ],
   },
   {
     id: 'und-06',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
+    categoryLabel: 'Understanding EduVerify',
     canonicalQuestion: 'What does "academic records connected by trust" mean?',
     synonyms: [
       'connected by trust',
@@ -184,7 +184,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'accepted files',
     ],
     answer:
-      'WEAVE currently supports standard UTF-8 encoded **CSV (.csv)** files with comma separators and quoted text fields. Direct Excel (.xlsx) parsing is slated for future release; please export your spreadsheet to CSV prior to upload.',
+      'EduVerify currently supports standard UTF-8 encoded **CSV (.csv)** files with comma separators and quoted text fields. Direct Excel (.xlsx) parsing is slated for future release; please export your spreadsheet to CSV prior to upload.',
     relatedIds: ['imp-01', 'imp-03'],
     followUpQuestions: [
       'What information should an import contain?',
@@ -223,7 +223,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'after upload',
     ],
     answer:
-      'After upload, WEAVE executes Ruleset 2026.10.v1 immediately:\n1. **Format verification:** Checks APAAR format and masks it to `****-****-XXXX`.\n2. **Program check:** Validates `program_code` against sanctioned AICTE codes.\n3. **Age & Year check:** Ensures date of birth and enrollment year meet academic guidelines.\n4. **Conflict detection:** Flags intra-batch and cross-institution duplicate digests.\n5. **Intake check:** Compares batch volume against sanctioned seat capacity.',
+      'After upload, EduVerify executes Ruleset 2026.10.v1 immediately:\n1. **Format verification:** Checks APAAR format and masks it to `****-****-XXXX`.\n2. **Program check:** Validates `program_code` against sanctioned AICTE codes.\n3. **Age & Year check:** Ensures date of birth and enrollment year meet academic guidelines.\n4. **Conflict detection:** Flags intra-batch and cross-institution duplicate digests.\n5. **Intake check:** Compares batch volume against sanctioned seat capacity.',
     relatedIds: ['val-01', 'dup-01', 'int-01'],
     followUpQuestions: [
       'What is an explainable validation rule?',
@@ -234,7 +234,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'imp-05',
     category: 'imports',
     categoryLabel: 'Student Records & Imports',
-    canonicalQuestion: 'What is a batch in WEAVE?',
+    canonicalQuestion: 'What is a batch in EduVerify?',
     synonyms: [
       'what is a batch',
       'batch definition',
@@ -276,7 +276,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'val-01',
     category: 'validation',
     categoryLabel: 'Validation & Data Quality',
-    canonicalQuestion: 'What is data validation in WEAVE?',
+    canonicalQuestion: 'What is data validation in EduVerify?',
     synonyms: [
       'what is validation',
       'validation engine',
@@ -285,7 +285,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'deterministic rules',
     ],
     answer:
-      'Data validation in WEAVE is an automated, deterministic ruleset (Ruleset `2026.10.v1`) that evaluates incoming student rows against 6 standardized rules (STU-001 through STU-006). It verifies identifier structure, sanctioned discipline codes, academic age windows, and cross-institution uniqueness before records enter the official registry.',
+      'Data validation in EduVerify is an automated, deterministic ruleset (Ruleset `2026.10.v1`) that evaluates incoming student rows against 6 standardized rules (STU-001 through STU-006). It verifies identifier structure, sanctioned discipline codes, academic age windows, and cross-institution uniqueness before records enter the official registry.',
     relatedIds: ['val-02', 'val-03'],
     followUpQuestions: [
       'Why was a student record flagged?',
@@ -363,10 +363,10 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'rule transparency',
     ],
     answer:
-      'In WEAVE, no record is ever rejected by an opaque algorithm or black-box LLM. Every evaluation returns:\n- The exact rule code (e.g. `STU-001`).\n- The affected field.\n- Expected criteria versus actual masked values.\n- Concrete remediation steps.',
+      'In EduVerify, no record is ever rejected by an opaque algorithm or black-box LLM. Every evaluation returns:\n- The exact rule code (e.g. `STU-001`).\n- The affected field.\n- Expected criteria versus actual masked values.\n- Concrete remediation steps.',
     relatedIds: ['val-01', 'sec-01'],
     followUpQuestions: [
-      'What is data validation in WEAVE?',
+      'What is data validation in EduVerify?',
       'How does duplicate detection work?',
     ],
   },
@@ -378,7 +378,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'dup-01',
     category: 'duplicates',
     categoryLabel: 'Duplicate Detection & Conflicts',
-    canonicalQuestion: 'How does duplicate detection work in WEAVE?',
+    canonicalQuestion: 'How does duplicate detection work in EduVerify?',
     synonyms: [
       'duplicate detection',
       'how duplicates work',
@@ -387,10 +387,10 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'cross institution duplicate',
     ],
     answer:
-      'WEAVE computes a cryptographic salted SHA-256 digest of each normalized APAAR identifier upon ingestion. When a batch contains a digest that already exists in the national registry for an overlapping academic year, rule `STU-005` flags a **Cross-Institution Duplicate Candidate** and routes it to the human adjudication queue.',
+      'EduVerify computes a cryptographic salted SHA-256 digest of each normalized APAAR identifier upon ingestion. When a batch contains a digest that already exists in the national registry for an overlapping academic year, rule `STU-005` flags a **Cross-Institution Duplicate Candidate** and routes it to the human adjudication queue.',
     relatedIds: ['dup-02', 'dup-03'],
     followUpQuestions: [
-      'Does WEAVE automatically merge or delete records?',
+      'Does EduVerify automatically merge or delete records?',
       'Why is human review necessary for duplicates?',
     ],
   },
@@ -398,7 +398,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'dup-02',
     category: 'duplicates',
     categoryLabel: 'Duplicate Detection & Conflicts',
-    canonicalQuestion: 'Does WEAVE automatically merge or delete duplicate records?',
+    canonicalQuestion: 'Does EduVerify automatically merge or delete duplicate records?',
     synonyms: [
       'auto delete duplicates',
       'automatic merge',
@@ -466,7 +466,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'To prevent industrial poaching and protect student privacy, institution-scoped users only see that their student has an active conflict. Counterpart institution names are redacted (`INST-REDACTED`). Only state/national regulators have cross-tenant visibility to review both institutions.',
     relatedIds: ['dup-04', 'sec-01'],
     followUpQuestions: [
-      'Who uses WEAVE?',
+      'Who uses EduVerify?',
       'What is data isolation between institutions?',
     ],
   },
@@ -478,7 +478,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'int-01',
     category: 'intake',
     categoryLabel: 'Approved Intake & Enrolment',
-    canonicalQuestion: 'What is approved intake in WEAVE?',
+    canonicalQuestion: 'What is approved intake in EduVerify?',
     synonyms: [
       'approved intake',
       'sanctioned seats',
@@ -506,7 +506,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'seat utilization',
     ],
     answer:
-      'Enrolment monitoring is WEAVE’s real-time comparison between committed, verified student enrolments and AICTE approved seat caps. It highlights programs approaching full capacity (≥90%), detects over-admission violations (rule STU-006), and provides regulators with cross-institution compliance metrics.',
+      'Enrolment monitoring is EduVerify’s real-time comparison between committed, verified student enrolments and AICTE approved seat caps. It highlights programs approaching full capacity (≥90%), detects over-admission violations (rule STU-006), and provides regulators with cross-institution compliance metrics.',
     relatedIds: ['int-01', 'int-03'],
     followUpQuestions: [
       'What does an intake discrepancy or overflow mean?',
@@ -528,7 +528,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'Enrolment can differ from approved intake for several legitimate reasons:\n- **Counselling attrition:** Vacant seats remaining after final mop-up rounds.\n- **Supernumerary quotas:** Government-mandated allocations (EWS, Tuition Fee Waiver, PMSSS, NRI) that exceed normal sanctioned limits.\n- **Pending batch commits:** Students in uploaded rosters that have not yet completed deterministic validation.',
     relatedIds: ['int-01', 'int-02'],
     followUpQuestions: [
-      'How does WEAVE flag intake violations?',
+      'How does EduVerify flag intake violations?',
       'Where do I find the Program Registry?',
     ],
   },
@@ -549,7 +549,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'public verifier',
     ],
     answer:
-      'Student record verification in WEAVE uses platform-issued, digitally signed Ed25519 attestations:\n1. An institution administrator issues a credential for a verified, consented student.\n2. The platform signs the payload with its Ed25519 private key and assigns an opaque token (e.g., `att-2026-901`).\n3. Verifiers visit `/verify/:token` or scan an opaque QR code to confirm cryptographic signature validity, active consent, and non-revocation without viewing raw identifiers.',
+      'Student record verification in EduVerify uses platform-issued, digitally signed Ed25519 attestations:\n1. An institution administrator issues a credential for a verified, consented student.\n2. The platform signs the payload with its Ed25519 private key and assigns an opaque token (e.g., `att-2026-901`).\n3. Verifiers visit `/verify/:token` or scan an opaque QR code to confirm cryptographic signature validity, active consent, and non-revocation without viewing raw identifiers.',
     relatedIds: ['ver-02', 'ver-03', 'ver-04'],
     followUpQuestions: [
       'What does a verification QR code contain?',
@@ -569,7 +569,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'does qr leak apaar',
     ],
     answer:
-      'A WEAVE QR code contains **only an opaque URL reference** (`https://weave.synth.edu/verify/att-2026-901`). It never encodes raw 12-digit APAAR numbers, student dates of birth, or private contact details, preventing harvesting if printed ID cards or certificates are lost.',
+      'A EduVerify QR code contains **only an opaque URL reference** (`https://weave.synth.edu/verify/att-2026-901`). It never encodes raw 12-digit APAAR numbers, student dates of birth, or private contact details, preventing harvesting if printed ID cards or certificates are lost.',
     relatedIds: ['ver-01', 'ver-03', 'sec-01'],
     followUpQuestions: [
       'Can an attestation be revoked?',
@@ -607,10 +607,10 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'why consent matters',
     ],
     answer:
-      'In compliance with India’s Digital Personal Data Protection (DPDP) principles, WEAVE will not issue or verify an academic attestation unless active student consent is recorded (`consent_granted: true`). When a student revokes consent, external verification requests are blocked.',
+      'In compliance with India’s Digital Personal Data Protection (DPDP) principles, EduVerify will not issue or verify an academic attestation unless active student consent is recorded (`consent_granted: true`). When a student revokes consent, external verification requests are blocked.',
     relatedIds: ['ver-01', 'sec-01'],
     followUpQuestions: [
-      'Does WEAVE directly connect to government APAAR servers?',
+      'Does EduVerify directly connect to government APAAR servers?',
       'How does student-record verification work?',
     ],
   },
@@ -618,7 +618,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'ver-05',
     category: 'verification',
     categoryLabel: 'Verification, Consent & Attestations',
-    canonicalQuestion: 'Does WEAVE directly connect to official APAAR or DigiLocker servers?',
+    canonicalQuestion: 'Does EduVerify directly connect to official APAAR or DigiLocker servers?',
     synonyms: [
       'live apaar connection',
       'digilocker integration',
@@ -627,7 +627,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'is this live data',
     ],
     answer:
-      '**No.** WEAVE is an SIH26263 reference implementation and prototype. All data shown is 100% synthetic demonstration data. WEAVE does not connect to live government APAAR, DigiLocker, or AICTE production APIs, and does not claim official government endorsement.',
+      '**No.** EduVerify is an SIH26263 reference implementation and prototype. All data shown is 100% synthetic demonstration data. EduVerify does not connect to live government APAAR, DigiLocker, or AICTE production APIs, and does not claim official government endorsement.',
     relatedIds: ['und-01', 'sec-01'],
     followUpQuestions: [
       'What is SIH26263?',
@@ -642,7 +642,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'sec-01',
     category: 'security',
     categoryLabel: 'Security & Audit Integrity',
-    canonicalQuestion: 'How does WEAVE protect student privacy?',
+    canonicalQuestion: 'How does EduVerify protect student privacy?',
     synonyms: [
       'privacy protection',
       'data privacy',
@@ -651,7 +651,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'security features',
     ],
     answer:
-      'WEAVE enforces four non-negotiable privacy boundaries:\n1. **Permanent APAAR Masking:** Identifiers are formatted as `****-****-XXXX`; full 12 digits are never returned in client state or tables.\n2. **Aadhaar Header Blocking:** Uploading files with Aadhaar, UID, or national identity columns triggers immediate rejection.\n3. **Tenant Isolation:** Institutions cannot view rosters or identifiers belonging to other colleges.\n4. **In-Memory Sessions:** Access tokens are stored strictly in memory—never in `localStorage` or `sessionStorage`.',
+      'EduVerify enforces four non-negotiable privacy boundaries:\n1. **Permanent APAAR Masking:** Identifiers are formatted as `****-****-XXXX`; full 12 digits are never returned in client state or tables.\n2. **Aadhaar Header Blocking:** Uploading files with Aadhaar, UID, or national identity columns triggers immediate rejection.\n3. **Tenant Isolation:** Institutions cannot view rosters or identifiers belonging to other colleges.\n4. **In-Memory Sessions:** Access tokens are stored strictly in memory—never in `localStorage` or `sessionStorage`.',
     relatedIds: ['sec-02', 'ver-04'],
     followUpQuestions: [
       'What is the tamper-evident audit timeline?',
@@ -699,7 +699,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     relatedIds: ['dash-02', 'imp-01'],
     followUpQuestions: [
       'What does the dashboard show?',
-      'What are the user roles in WEAVE?',
+      'What are the user roles in EduVerify?',
     ],
   },
   {
@@ -764,7 +764,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'dash-05',
     category: 'dashboard',
     categoryLabel: 'Dashboard & Navigation',
-    canonicalQuestion: 'What can a regulator do in WEAVE?',
+    canonicalQuestion: 'What can a regulator do in EduVerify?',
     synonyms: [
       'regulator role',
       'regulator officer',
@@ -783,7 +783,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
     id: 'dash-06',
     category: 'dashboard',
     categoryLabel: 'Dashboard & Navigation',
-    canonicalQuestion: 'What can an auditor review in WEAVE?',
+    canonicalQuestion: 'What can an auditor review in EduVerify?',
     synonyms: [
       'auditor role',
       'auditor permissions',
@@ -801,7 +801,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     id: 'und-06',
     category: 'understanding',
-    categoryLabel: 'Understanding WEAVE',
+    categoryLabel: 'Understanding EduVerify',
     canonicalQuestion: 'What is the 3D Interactive Spatial Apparatus?',
     synonyms: [
       '3d apparatus',
@@ -812,7 +812,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'what is 3d model',
     ],
     answer:
-      'The 3D Interactive Spatial Apparatus is a full WebGL visualization of WEAVE’s physical-digital trust architecture. It models the decentralized institution nodes, cryptographic attestation vault, high-throughput verification bus, and audit ledger. You can inspect components, view exploded assembly layers, and switch camera angles smoothly.',
+      'The 3D Interactive Spatial Apparatus is a full WebGL visualization of EduVerify’s physical-digital trust architecture. It models the decentralized institution nodes, cryptographic attestation vault, high-throughput verification bus, and audit ledger. You can inspect components, view exploded assembly layers, and switch camera angles smoothly.',
     relatedIds: ['und-01', 'ver-01'],
     followUpQuestions: [
       'Why is the 3D apparatus important?',
@@ -875,7 +875,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'Under the Digital Personal Data Protection (DPDP) Act and AICTE guidelines, academic verification must be consent-backed. RULE-CONSENT-CHK verifies that a valid cryptographic or logged consent token is associated with the student profile before any third-party attestation is issued.',
     relatedIds: ['sec-01', 'ver-01'],
     followUpQuestions: [
-      'How does WEAVE protect student privacy?',
+      'How does EduVerify protect student privacy?',
       'What is an Ed25519 attestation?',
     ],
   },
@@ -911,7 +911,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'extra seats allowed',
     ],
     answer:
-      'AICTE permits statutory supernumerary allocations (such as +10% for Economically Weaker Sections and +5% Tuition Fee Waiver). In WEAVE, these seats are tagged with specific quota codes. They do not trigger STU-006 violations up to their legally designated ceiling when sanctioned by the regulatory authority.',
+      'AICTE permits statutory supernumerary allocations (such as +10% for Economically Weaker Sections and +5% Tuition Fee Waiver). In EduVerify, these seats are tagged with specific quota codes. They do not trigger STU-006 violations up to their legally designated ceiling when sanctioned by the regulatory authority.',
     relatedIds: ['int-01', 'int-04'],
     followUpQuestions: [
       'What happens when a program exceeds 100% capacity?',
@@ -931,7 +931,7 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'public verification',
     ],
     answer:
-      'The QR code or attestation payload contains the student’s masked identifier (****-****-XXXX), institution code, program code, enrollment year, expiry timestamp, and an Ed25519 cryptographic signature. Any verifier can check the mathematical signature against WEAVE’s public key offline without needing access to raw government databases or unmasked private data.',
+      'The QR code or attestation payload contains the student’s masked identifier (****-****-XXXX), institution code, program code, enrollment year, expiry timestamp, and an Ed25519 cryptographic signature. Any verifier can check the mathematical signature against EduVerify’s public key offline without needing access to raw government databases or unmasked private data.',
     relatedIds: ['ver-01', 'ver-02'],
     followUpQuestions: [
       'What is an Ed25519 attestation?',
@@ -951,10 +951,10 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'rainbow table protection',
     ],
     answer:
-      'WEAVE uses salted SHA-256 digests. Raw 12-digit APAAR numbers are salted with an institutional secret before hashing. This prevents dictionary and rainbow-table attacks. The UI only ever displays masked formats (`****-****-XXXX`), ensuring zero plain-text leaks even in logs and database exports.',
+      'EduVerify uses salted SHA-256 digests. Raw 12-digit APAAR numbers are salted with an institutional secret before hashing. This prevents dictionary and rainbow-table attacks. The UI only ever displays masked formats (`****-****-XXXX`), ensuring zero plain-text leaks even in logs and database exports.',
     relatedIds: ['sec-01', 'sec-03'],
     followUpQuestions: [
-      'How does WEAVE protect student privacy?',
+      'How does EduVerify protect student privacy?',
       'What is the tamper-evident audit timeline?',
     ],
   },
@@ -971,11 +971,11 @@ export const WEAVE_KNOWLEDGE_BASE: KnowledgeEntry[] = [
       'where to find things',
     ],
     answer:
-      'The workspace navigation is cleanly structured into 5 functional groups:\n1. **Overview:** Central Dashboard (`/app`)\n2. **Student records:** Student Records Registry, Import Batches, Data Validation, Duplicate Review\n3. **Oversight:** Institutions & Programs, Enrolment Monitoring\n4. **Trust:** Verification, Consent, Audit Trail\n5. **Support:** WEAVE Assistant, Help & Guidance\n\nAdditionally, the **3D Spatial Topology** is accessible directly from navigation.',
+      'The workspace navigation is cleanly structured into 5 functional groups:\n1. **Overview:** Central Dashboard (`/app`)\n2. **Student records:** Student Records Registry, Import Batches, Data Validation, Duplicate Review\n3. **Oversight:** Institutions & Programs, Enrolment Monitoring\n4. **Trust:** Verification, Consent, Audit Trail\n5. **Support:** EduVerify Assistant, Help & Guidance\n\nAdditionally, the **3D Spatial Topology** is accessible directly from navigation.',
     relatedIds: ['dash-01', 'dash-02'],
     followUpQuestions: [
       'What does the workspace dashboard show?',
-      'What can a regulator do in WEAVE?',
+      'What can a regulator do in EduVerify?',
     ],
   },
 ];

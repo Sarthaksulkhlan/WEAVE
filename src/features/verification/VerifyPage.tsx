@@ -71,7 +71,7 @@ export const VerifyPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 text-xs text-[#686B65] hover:text-[#20241F] mb-2"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to WEAVE overview</span>
+              <span>Back to EduVerify overview</span>
             </Link>
             <h1 className="font-display text-2xl font-bold text-[#20241F]">
               Enrolment Attestation Verification

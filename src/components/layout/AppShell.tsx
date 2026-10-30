@@ -71,9 +71,9 @@ const ROUTE_META: Record<string, { title: string; subtitle: string; crumb: strin
     crumb: 'Audit Timeline',
   },
   '/app/assistant': {
-    title: 'WEAVE Knowledge Assistant (Rule-Based)',
+    title: 'EduVerify Knowledge Assistant (Rule-Based)',
     subtitle: 'Curated compliance, validation rules, intake capacity, and verification guide with zero LLM API dependency.',
-    crumb: 'WEAVE Assistant',
+    crumb: 'EduVerify Assistant',
   },
   '/app/settings': {
     title: 'Workspace & Session Settings',
@@ -121,7 +121,6 @@ export const AppShell: React.FC = () => {
       title: 'Overview',
       items: [
         { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-        { to: '/app/topology', label: '3D Spatial Topology', icon: Box, badge: 'Live 3D' },
       ],
     },
     {
@@ -156,7 +155,7 @@ export const AppShell: React.FC = () => {
     {
       title: 'Support',
       items: [
-        { to: '/app/assistant', label: 'WEAVE Assistant', icon: MessageSquare, badge: 'Offline' },
+        { to: '/app/assistant', label: 'EduVerify Assistant', icon: MessageSquare, badge: 'Offline' },
         { to: '/app/settings', label: 'Help and guidance', icon: Settings },
       ],
     },
@@ -199,7 +198,7 @@ export const AppShell: React.FC = () => {
           className="hidden lg:flex lg:w-64 xl:w-68 flex-col bg-white border-r border-[#DEDDD5] shrink-0"
         >
           <div className="h-16 px-5 border-b border-[#DEDDD5] flex items-center justify-between">
-            <Link to="/" aria-label="WEAVE Public Home">
+            <Link to="/" aria-label="EduVerify Public Home">
               <WeaveLogo />
             </Link>
             <span className="font-mono text-[11px] text-[#686B65]">v0.1.0</span>

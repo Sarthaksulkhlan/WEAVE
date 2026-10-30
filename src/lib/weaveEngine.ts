@@ -3,7 +3,8 @@ export type UserRole =
   | 'regulator_officer'
   | 'institution_admin'
   | 'institution_operator'
-  | 'auditor';
+  | 'auditor'
+  | 'student';
 
 // Legacy alias preserved for unit tests and backward compatibility
 export type RolePersona =
@@ -44,6 +45,98 @@ export interface StudentRecord {
   validation_results: ValidationRuleResult[];
   batch_id: string;
   created_at: string;
+  university?: string;
+  course_name?: string;
+  branch?: string;
+  current_academic_year?: string;
+  email?: string;
+  phone_masked?: string;
+}
+
+export interface StudentAcademicCourseRecord {
+  id: string;
+  semester: string;
+  academic_year: string;
+  course_code: string;
+  course_title: string;
+  credits: number;
+  grade: string;
+  sgpa?: string;
+  attendance_pct: number;
+  source_status: 'INSTITUTION_UPLOADED' | 'PLATFORM_VERIFIED';
+  verification_status: 'Verified' | 'Pending' | 'Requires Review';
+  verified_at?: string;
+}
+
+export interface StudentDiscrepancyTicket {
+  id: string;
+  student_ref: string;
+  student_name: string;
+  institution_id: string;
+  institution_name: string;
+  discrepancy_type:
+    | 'Name / Date of Birth Correction'
+    | 'APAAR Mapping Mismatch'
+    | 'Programme / Branch Correction'
+    | 'Semester Record Discrepancy'
+    | 'Duplicate Enrolment Flag Clarification';
+  description: string;
+  relevant_record: string;
+  supporting_doc_ref: string;
+  status:
+    | 'Submitted'
+    | 'Under Review'
+    | 'Additional Information Required'
+    | 'Resolved'
+    | 'Rejected';
+  created_at: string;
+  updated_at: string;
+  reviewer_notes?: string;
+}
+
+export interface VerificationRequestRecord {
+  id: string;
+  student_record_id: string;
+  student_ref: string;
+  student_name: string;
+  apaar_masked: string;
+  institution_id: string;
+  institution_name: string;
+  program_code: string;
+  requesting_organisation: string;
+  organisation_type: 'Government Scholarship' | 'Higher Education / University' | 'Authorized Employer' | 'Regulatory Body';
+  information_requested: string[];
+  purpose: string;
+  request_date: string;
+  status: 'Pending' | 'Verified' | 'Unable to Verify' | 'Requires Review';
+  attestation_token?: string;
+  evidence_source: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+}
+
+export interface StudentConsentPreferences {
+  student_ref: string;
+  scholarship_portals_enabled: boolean;
+  credit_transfer_abc_enabled: boolean;
+  employer_verification_enabled: boolean;
+  statutory_aicte_reporting_enabled: boolean; // Mandatory statutory reporting
+  updated_at: string;
+  consent_history: Array<{
+    id: string;
+    action: string;
+    scope: string;
+    timestamp: string;
+    actor: string;
+  }>;
+  access_logs: Array<{
+    id: string;
+    organisation: string;
+    purpose: string;
+    fields_shared: string;
+    accessed_at: string;
+    status: 'Authorized' | 'Blocked (No Consent)';
+  }>;
 }
 
 export interface ProgramIntakeSlice {
@@ -61,7 +154,11 @@ export interface InstitutionSummary {
   name: string;
   state: string;
   tier: string;
+  university?: string;
   status?: 'ACTIVE' | 'UNDER_REVIEW';
+  submission_status?: 'Submitted' | 'Partial Submission' | 'Overdue';
+  validation_status?: 'Passed' | 'Requires Review' | 'Exceptions Flagged';
+  last_submission_date?: string;
   programs: ProgramIntakeSlice[];
 }
 
@@ -91,7 +188,7 @@ export interface ConflictCase {
   match_evidence?: string[];
   similarity_score?: number;
   severity: 'HIGH' | 'MEDIUM';
-  status: 'OPEN' | 'RESOLVED' | 'INFO_REQUESTED';
+  status: 'OPEN' | 'RESOLVED' | 'INFO_REQUESTED' | 'ESCALATED';
   assigned_reviewer?: string;
   resolution_action?:
     | 'CONFIRM_TRANSFER'
@@ -141,6 +238,9 @@ export interface AuditEvent {
   entity_id: string;
   outcome?: 'SUCCESS' | 'DENIED' | 'FLAGGED';
   summary: string;
+  previous_value?: string;
+  updated_value?: string;
+  review_decision?: string;
   previous_hash: string;
   event_hash: string;
   created_at: string;
@@ -244,6 +344,14 @@ export const VALIDATION_RULES_CATALOG = [
       'Verify supernumerary quota approval or reconcile approved program intake limits before committing records.',
   },
 ] as const;
+
+export function isStudentRole(role: RolePersona): boolean {
+  return role === 'student';
+}
+
+export function isAdminPortalRole(role: RolePersona): boolean {
+  return role !== 'student';
+}
 
 export function isInstitutionScopedRole(role: RolePersona): boolean {
   return (

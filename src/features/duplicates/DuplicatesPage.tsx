@@ -85,7 +85,7 @@ export const DuplicatesPage: React.FC = () => {
             Adjudication Safeguard: A candidate hash match is not proof of fraud.
           </div>
           <p className="text-[#686B65]">
-            WEAVE never automatically merges or deletes student records. Authorized officers must
+            EduVerify never automatically merges or deletes student records. Authorized officers must
             verify counselling withdrawal documentation and record a reason before confirming.
           </p>
         </div>

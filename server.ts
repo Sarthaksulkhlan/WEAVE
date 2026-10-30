@@ -76,33 +76,74 @@ async function startServer() {
     });
   });
 
-  // Synthetic Auth Login
+  // Synthetic Auth Login (Supports Administration Login & Student Login via Unique ID Code + Password)
   app.post('/api/v1/auth/login', (req, res) => {
     const reqId = `req_${Date.now().toString(36)}`;
-    const { email = '', password = '' } = req.body || {};
-    const cleanEmail = String(email).trim().toLowerCase();
+    const { uniqueId = '', email = '', password = '', loginType = 'administration' } = req.body || {};
+    const identifier = String(uniqueId || email).trim();
 
-    if (!cleanEmail || !password || String(password).length < 4) {
+    if (!identifier || !password || String(password).length < 4) {
       res.status(400).json(
         createApiError(
           'INVALID_CREDENTIALS',
-          'Provide a valid synthetic institutional or regulatory email and password.',
+          'Provide a valid Unique ID Code and password.',
           reqId,
-          [{ field: 'email', reason: 'Synthetic demo credentials required.' }]
+          [{ field: 'uniqueId', reason: 'Unique ID Code and password are required.' }]
         )
       );
       return;
     }
 
+    if (loginType === 'student') {
+      const upperId = identifier.toUpperCase();
+      const matchedStudent =
+        state.students.find(
+          (s) => s.student_ref.toUpperCase() === upperId || s.id.toUpperCase() === upperId
+        ) || state.students[0];
+      const studentAccount = {
+        id: `usr_stu_${matchedStudent.student_ref.toLowerCase()}`,
+        email: `${matchedStudent.student_ref.toLowerCase()}@student.eduverify.synth.edu`,
+        name: matchedStudent.full_name,
+        role: 'student' as RolePersona,
+        portalType: 'student' as const,
+        student_ref: matchedStudent.student_ref,
+        roleLabel: `Student · ${matchedStudent.student_ref}`,
+        institution_id: matchedStudent.institution_id,
+        institution_name: matchedStudent.institution_name,
+        scopeDescription: `My EduVerify Student Portal · ${matchedStudent.student_ref} (${matchedStudent.apaar_masked})`,
+      };
+
+      res.json({
+        environment: 'SYNTHETIC',
+        access_token: `synth_mem_tok_student_${Date.now().toString(36)}`,
+        expires_in: 3600,
+        user: studentAccount,
+      });
+      return;
+    }
+
+    const lowerId = identifier.toLowerCase();
+    const adminCandidates = SYNTHETIC_DEMO_ACCOUNTS.filter((a) => a.role !== 'student');
     const account =
-      SYNTHETIC_DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === cleanEmail) ||
-      SYNTHETIC_DEMO_ACCOUNTS[0];
+      adminCandidates.find(
+        (a) =>
+          a.email.toLowerCase() === lowerId ||
+          a.id.toLowerCase() === lowerId ||
+          (a.institution_id && a.institution_id.toLowerCase() === lowerId)
+      ) || {
+        ...adminCandidates[0],
+        portalType: 'admin' as const,
+        roleLabel: `AICTE Admin Console · ${identifier.toUpperCase()}`,
+      };
 
     res.json({
       environment: 'SYNTHETIC',
       access_token: `synth_mem_tok_${account.role}_${Date.now().toString(36)}`,
       expires_in: 3600,
-      user: account,
+      user: {
+        ...account,
+        portalType: 'admin',
+      },
     });
   });
 
@@ -111,6 +152,300 @@ async function startServer() {
       environment: 'SYNTHETIC',
       access_token: `synth_mem_tok_refreshed_${Date.now().toString(36)}`,
       expires_in: 3600,
+    });
+  });
+
+  // Student Portal — Scoped Student Profile, Academic Records, Verification, Discrepancies & Consent
+  app.get('/api/v1/student/me', (req, res) => {
+    const studentRef = String(req.query.student_ref || 'STU-2026-101').toUpperCase();
+    const student =
+      state.students.find(
+        (s) => s.student_ref.toUpperCase() === studentRef || s.id.toUpperCase() === studentRef
+      ) || state.students[0];
+
+    const institution =
+      state.institutions.find((i) => i.id === student.institution_id) || state.institutions[0];
+
+    const courseRecords =
+      state.studentCourseRecords[student.student_ref] ||
+      state.studentCourseRecords['STU-2026-101'] ||
+      [];
+
+    const attestations = state.attestations.filter(
+      (a) => a.student_ref.toUpperCase() === student.student_ref.toUpperCase()
+    );
+
+    const verificationRequests = state.verificationRequests.filter(
+      (v) => v.student_ref.toUpperCase() === student.student_ref.toUpperCase()
+    );
+
+    const discrepancies = state.discrepancies.filter(
+      (d) => d.student_ref.toUpperCase() === student.student_ref.toUpperCase()
+    );
+
+    const consent = state.studentConsents[student.student_ref] || {
+      ...state.studentConsents['STU-2026-101'],
+      student_ref: student.student_ref,
+    };
+
+    const activityHistory = state.auditEvents.filter(
+      (ev) =>
+        ev.summary.includes(student.student_ref) ||
+        ev.summary.includes(student.apaar_masked) ||
+        ev.entity_id === student.id ||
+        ev.entity_id === student.batch_id ||
+        attestations.some((a) => a.id === ev.entity_id)
+    );
+
+    res.json({
+      environment: 'SYNTHETIC',
+      student: {
+        ...student,
+        university: institution.university || 'NIT Kurukshetra (Autonomous)',
+        course_name:
+          student.program_code === 'BTECH-CSE'
+            ? 'Bachelor of Technology (B.Tech)'
+            : student.program_code === 'BTECH-ECE'
+              ? 'Bachelor of Technology (B.Tech)'
+              : student.program_code === 'MTECH-AI'
+                ? 'Master of Technology (M.Tech)'
+                : 'AICTE Approved Degree Programme',
+        branch:
+          student.program_code === 'BTECH-CSE'
+            ? 'Computer Science & Engineering'
+            : student.program_code === 'BTECH-ECE'
+              ? 'Electronics & Communication Engineering'
+              : student.program_code === 'MTECH-AI'
+                ? 'Artificial Intelligence & Data Science'
+                : student.program_code,
+        current_academic_year: '2nd Year · Semester III (AY 2026–27)',
+        email: `${student.student_ref.toLowerCase()}@student.nitkkr.synth.edu`,
+        phone_masked: '+91 ••••• •4829',
+      },
+      institution,
+      course_records: courseRecords,
+      attestations,
+      verification_requests: verificationRequests,
+      discrepancies,
+      consent,
+      activity_history: activityHistory,
+    });
+  });
+
+  // Student Portal — Submit a Discrepancy Report
+  app.post('/api/v1/student/discrepancies', (req, res) => {
+    const reqId = `req_${Date.now().toString(36)}`;
+    const {
+      student_ref = 'STU-2026-101',
+      discrepancy_type = 'Semester Record Discrepancy',
+      description = '',
+      relevant_record = '',
+      supporting_doc_ref = '',
+    } = req.body || {};
+
+    if (!description || String(description).trim().length < 10) {
+      res.status(400).json(
+        createApiError(
+          'VALIDATION_ERROR',
+          'Please provide a clear discrepancy description (at least 10 characters).',
+          reqId,
+          [{ field: 'description', reason: 'Minimum 10 characters required.' }]
+        )
+      );
+      return;
+    }
+
+    const student =
+      state.students.find((s) => s.student_ref.toUpperCase() === String(student_ref).toUpperCase()) ||
+      state.students[0];
+
+    const nowIso = new Date().toISOString();
+    const newTicket = {
+      id: `DSC-2026-${String(state.discrepancies.length + 55).padStart(3, '0')}`,
+      student_ref: student.student_ref,
+      student_name: student.full_name,
+      institution_id: student.institution_id,
+      institution_name: student.institution_name,
+      discrepancy_type,
+      description: String(description).trim(),
+      relevant_record: String(relevant_record || 'General Academic Record').trim(),
+      supporting_doc_ref: String(supporting_doc_ref || 'DOC-REF-PENDING').trim(),
+      status: 'Submitted' as const,
+      created_at: nowIso,
+      updated_at: nowIso,
+      reviewer_notes: 'Queued for review by Institutional Nodal Officer.',
+    };
+
+    state.discrepancies.unshift(newTicket);
+
+    const auditEvent = appendAuditEvent({
+      institution_id: student.institution_id,
+      actor_role: 'student',
+      actor_user_id: `${student.student_ref.toLowerCase()}@student.eduverify.synth.edu`,
+      action: 'DISCREPANCY_SUBMITTED',
+      entity_type: 'STUDENT_RECORD',
+      entity_id: newTicket.id,
+      outcome: 'SUCCESS',
+      summary: `Student ${student.student_ref} submitted discrepancy report ${newTicket.id} (${discrepancy_type}).`,
+    });
+
+    res.status(201).json({
+      environment: 'SYNTHETIC',
+      ticket: newTicket,
+      audit_event: auditEvent,
+    });
+  });
+
+  // Student Portal — Update Consent & Privacy Preferences
+  app.post('/api/v1/student/consent', (req, res) => {
+    const {
+      student_ref = 'STU-2026-101',
+      scholarship_portals_enabled = true,
+      credit_transfer_abc_enabled = true,
+      employer_verification_enabled = false,
+    } = req.body || {};
+
+    const student =
+      state.students.find((s) => s.student_ref.toUpperCase() === String(student_ref).toUpperCase()) ||
+      state.students[0];
+
+    const existing = state.studentConsents[student.student_ref] || {
+      ...state.studentConsents['STU-2026-101'],
+      student_ref: student.student_ref,
+    };
+
+    const nowIso = new Date().toISOString();
+    const updatedConsent = {
+      ...existing,
+      scholarship_portals_enabled: Boolean(scholarship_portals_enabled),
+      credit_transfer_abc_enabled: Boolean(credit_transfer_abc_enabled),
+      employer_verification_enabled: Boolean(employer_verification_enabled),
+      statutory_aicte_reporting_enabled: true, // Statutory AICTE intake reporting cannot be disabled
+      updated_at: nowIso,
+      consent_history: [
+        {
+          id: `CNS-HIST-${Date.now().toString(36).toUpperCase()}`,
+          action: 'PREFERENCE_UPDATED',
+          scope: `Scholarship=${Boolean(scholarship_portals_enabled)}, ABC=${Boolean(
+            credit_transfer_abc_enabled
+          )}, Employer=${Boolean(employer_verification_enabled)}`,
+          timestamp: nowIso,
+          actor: `${student.full_name} (${student.student_ref})`,
+        },
+        ...existing.consent_history,
+      ],
+    };
+
+    state.studentConsents[student.student_ref] = updatedConsent;
+    student.consent_granted =
+      updatedConsent.scholarship_portals_enabled || updatedConsent.credit_transfer_abc_enabled;
+
+    const auditEvent = appendAuditEvent({
+      institution_id: student.institution_id,
+      actor_role: 'student',
+      actor_user_id: `${student.student_ref.toLowerCase()}@student.eduverify.synth.edu`,
+      action: 'CONSENT_PREFERENCES_UPDATED',
+      entity_type: 'STUDENT_RECORD',
+      entity_id: student.id,
+      outcome: 'SUCCESS',
+      summary: `Student ${student.student_ref} updated data-sharing consent preferences (Scholarship=${updatedConsent.scholarship_portals_enabled}, ABC=${updatedConsent.credit_transfer_abc_enabled}, Employer=${updatedConsent.employer_verification_enabled}).`,
+    });
+
+    res.json({
+      environment: 'SYNTHETIC',
+      consent: updatedConsent,
+      audit_event: auditEvent,
+    });
+  });
+
+  // Admin Portal — Verification Requests & Student Discrepancies Management
+  app.get('/api/v1/admin/verification-requests', (_req, res) => {
+    res.json({
+      environment: 'SYNTHETIC',
+      verification_requests: state.verificationRequests,
+      discrepancies: state.discrepancies,
+    });
+  });
+
+  app.post('/api/v1/admin/verification-requests/:id/decision', (req, res) => {
+    const reqId = `req_${Date.now().toString(36)}`;
+    const { id } = req.params;
+    const {
+      status = 'Verified',
+      actor_role = 'regulator_admin',
+      actor_email = 'director.compliance@aicte.synth.gov.in',
+      notes = '',
+    } = req.body || {};
+
+    const found = state.verificationRequests.find((v) => v.id.toUpperCase() === id.toUpperCase());
+    if (!found) {
+      res.status(404).json(createApiError('NOT_FOUND', `Verification request ${id} not found.`, reqId));
+      return;
+    }
+
+    const prevStatus = found.status;
+    found.status = status;
+    found.reviewed_by = actor_email;
+    found.reviewed_at = new Date().toISOString();
+    if (notes) {
+      found.evidence_source = `${found.evidence_source} · Note: ${String(notes).trim()}`;
+    }
+
+    const auditEvent = appendAuditEvent({
+      institution_id: found.institution_id,
+      actor_role: actor_role as RolePersona,
+      actor_user_id: actor_email,
+      action: 'VERIFICATION_REQUEST_DECISION',
+      entity_type: 'ATTESTATION',
+      entity_id: found.id,
+      outcome: status === 'Unable to Verify' ? 'DENIED' : 'SUCCESS',
+      summary: `Updated verification request ${found.id} (${found.student_ref} · ${found.requesting_organisation}) from ${prevStatus} to ${status}.`,
+    });
+
+    res.json({
+      environment: 'SYNTHETIC',
+      verification_request: found,
+      audit_event: auditEvent,
+    });
+  });
+
+  app.post('/api/v1/admin/discrepancies/:id/status', (req, res) => {
+    const reqId = `req_${Date.now().toString(36)}`;
+    const { id } = req.params;
+    const {
+      status = 'Resolved',
+      reviewer_notes = '',
+      actor_role = 'regulator_admin',
+      actor_email = 'director.compliance@aicte.synth.gov.in',
+    } = req.body || {};
+
+    const ticket = state.discrepancies.find((d) => d.id.toUpperCase() === id.toUpperCase());
+    if (!ticket) {
+      res.status(404).json(createApiError('NOT_FOUND', `Discrepancy ticket ${id} not found.`, reqId));
+      return;
+    }
+
+    ticket.status = status;
+    ticket.updated_at = new Date().toISOString();
+    if (reviewer_notes) {
+      ticket.reviewer_notes = String(reviewer_notes).trim();
+    }
+
+    const auditEvent = appendAuditEvent({
+      institution_id: ticket.institution_id,
+      actor_role: actor_role as RolePersona,
+      actor_user_id: actor_email,
+      action: 'DISCREPANCY_REVIEWED',
+      entity_type: 'STUDENT_RECORD',
+      entity_id: ticket.id,
+      outcome: 'SUCCESS',
+      summary: `Admin updated discrepancy ${ticket.id} (${ticket.student_ref}) to '${status}'.`,
+    });
+
+    res.json({
+      environment: 'SYNTHETIC',
+      ticket,
+      audit_event: auditEvent,
     });
   });
 
@@ -528,7 +863,12 @@ async function startServer() {
     }
 
     const nowIso = new Date().toISOString();
-    conflict.status = resolution_action === 'REQUEST_INFO' ? 'INFO_REQUESTED' : 'RESOLVED';
+    conflict.status =
+      resolution_action === 'REQUEST_INFO'
+        ? 'INFO_REQUESTED'
+        : resolution_action === 'ESCALATE_REGULATOR'
+          ? 'ESCALATED'
+          : 'RESOLVED';
     conflict.resolution_action = resolution_action;
     conflict.resolution_notes = String(resolution_notes).trim();
     conflict.resolved_by = actor_email;

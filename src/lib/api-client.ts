@@ -7,6 +7,10 @@ import type {
   AttestationRecord,
   AuditEvent,
   UserRole,
+  StudentAcademicCourseRecord,
+  StudentDiscrepancyTicket,
+  VerificationRequestRecord,
+  StudentConsentPreferences,
 } from './weaveEngine';
 import type { DemoAccount } from './syntheticSeed';
 
@@ -97,10 +101,16 @@ export const weaveQueryKeys = {
   auditEvents: (role: UserRole, institutionId?: string) =>
     ['weave', 'audit-events', role, institutionId || 'all'] as const,
   verifyToken: (token: string) => ['weave', 'verify-token', token] as const,
+  studentMe: (studentRef: string) => ['weave', 'student-me', studentRef] as const,
+  adminVerificationRequests: () => ['weave', 'admin-verification-requests'] as const,
 };
 
 export const weaveApiClient = {
-  login: (email: string, password: string) =>
+  login: (
+    uniqueId: string,
+    password: string,
+    loginType: 'administration' | 'student' = 'administration'
+  ) =>
     requestWithRefresh<{
       environment: string;
       access_token: string;
@@ -108,7 +118,90 @@ export const weaveApiClient = {
       user: DemoAccount;
     }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ uniqueId, email: uniqueId, password, loginType }),
+    }),
+
+  getStudentMe: (studentRef: string = 'STU-2026-101') =>
+    requestWithRefresh<{
+      environment: string;
+      student: StudentRecord;
+      institution: InstitutionSummary;
+      course_records: StudentAcademicCourseRecord[];
+      attestations: AttestationRecord[];
+      verification_requests: VerificationRequestRecord[];
+      discrepancies: StudentDiscrepancyTicket[];
+      consent: StudentConsentPreferences;
+      activity_history: AuditEvent[];
+    }>(`/student/me?student_ref=${encodeURIComponent(studentRef)}`),
+
+  submitDiscrepancy: (params: {
+    student_ref: string;
+    discrepancy_type: StudentDiscrepancyTicket['discrepancy_type'];
+    description: string;
+    relevant_record: string;
+    supporting_doc_ref: string;
+  }) =>
+    requestWithRefresh<{
+      environment: string;
+      ticket: StudentDiscrepancyTicket;
+      audit_event: AuditEvent;
+    }>('/student/discrepancies', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  updateStudentConsent: (params: {
+    student_ref: string;
+    scholarship_portals_enabled: boolean;
+    credit_transfer_abc_enabled: boolean;
+    employer_verification_enabled: boolean;
+  }) =>
+    requestWithRefresh<{
+      environment: string;
+      consent: StudentConsentPreferences;
+      audit_event: AuditEvent;
+    }>('/student/consent', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  getAdminVerificationRequests: () =>
+    requestWithRefresh<{
+      environment: string;
+      verification_requests: VerificationRequestRecord[];
+      discrepancies: StudentDiscrepancyTicket[];
+    }>('/admin/verification-requests'),
+
+  decideVerificationRequest: (params: {
+    id: string;
+    status: VerificationRequestRecord['status'];
+    actor_role: UserRole;
+    actor_email: string;
+    notes?: string;
+  }) =>
+    requestWithRefresh<{
+      environment: string;
+      verification_request: VerificationRequestRecord;
+      audit_event: AuditEvent;
+    }>(`/admin/verification-requests/${encodeURIComponent(params.id)}/decision`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  updateDiscrepancyStatus: (params: {
+    id: string;
+    status: StudentDiscrepancyTicket['status'];
+    reviewer_notes?: string;
+    actor_role: UserRole;
+    actor_email: string;
+  }) =>
+    requestWithRefresh<{
+      environment: string;
+      ticket: StudentDiscrepancyTicket;
+      audit_event: AuditEvent;
+    }>(`/admin/discrepancies/${encodeURIComponent(params.id)}/status`, {
+      method: 'POST',
+      body: JSON.stringify(params),
     }),
 
   getInstitutionsOverview: (role: UserRole, institutionId?: string) =>

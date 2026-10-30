@@ -10,6 +10,10 @@ import {
   type AttestationRecord,
   type AuditEvent,
   type UserRole,
+  type StudentAcademicCourseRecord,
+  type StudentDiscrepancyTicket,
+  type VerificationRequestRecord,
+  type StudentConsentPreferences,
 } from './weaveEngine';
 
 export interface DemoAccount {
@@ -18,6 +22,8 @@ export interface DemoAccount {
   name: string;
   role: UserRole;
   roleLabel: string;
+  portalType?: 'student' | 'admin';
+  student_ref?: string;
   institution_id?: string;
   institution_name?: string;
   scopeDescription: string;
@@ -25,24 +31,13 @@ export interface DemoAccount {
 
 export const SYNTHETIC_DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    id: 'usr_inst_op_kkr',
-    email: 'sarthak.operator@nitkkr.synth.edu',
-    name: 'Sarthak Sulkhlan',
-    role: 'institution_operator',
-    roleLabel: 'Institution Operator',
-    institution_id: 'INST-KKR-101',
-    institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
-    scopeDescription: 'Tenant-isolated to INST-KKR-101 · CSV ingestion & student records',
-  },
-  {
-    id: 'usr_inst_admin_kkr',
-    email: 'dean.academic@nitkkr.synth.edu',
-    name: 'Dr. Kavita Deshpande',
-    role: 'institution_admin',
-    roleLabel: 'Institution Administrator',
-    institution_id: 'INST-KKR-101',
-    institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
-    scopeDescription: 'Tenant-isolated to INST-KKR-101 · Batch commit & attestation issuance',
+    id: 'usr_reg_admin',
+    email: 'director.compliance@aicte.synth.gov.in',
+    name: 'Rajeshwari Subramanian',
+    role: 'regulator_admin',
+    roleLabel: 'AICTE Directorate Admin',
+    portalType: 'admin',
+    scopeDescription: 'Full cross-institution AICTE oversight · Policy & program intake governance',
   },
   {
     id: 'usr_reg_officer',
@@ -50,15 +45,30 @@ export const SYNTHETIC_DEMO_ACCOUNTS: DemoAccount[] = [
     name: 'Satyam Verma',
     role: 'regulator_officer',
     roleLabel: 'Regulator Review Officer',
+    portalType: 'admin',
     scopeDescription: 'Cross-institution AICTE scope · Duplicate adjudication & intake review',
   },
   {
-    id: 'usr_reg_admin',
-    email: 'director.compliance@aicte.synth.gov.in',
-    name: 'Rajeshwari Subramanian',
-    role: 'regulator_admin',
-    roleLabel: 'Regulator Directorate Admin',
-    scopeDescription: 'Full cross-institution oversight · Policy & program intake governance',
+    id: 'usr_inst_admin_kkr',
+    email: 'dean.academic@nitkkr.synth.edu',
+    name: 'Dr. Kavita Deshpande',
+    role: 'institution_admin',
+    roleLabel: 'Institution Administrator',
+    portalType: 'admin',
+    institution_id: 'INST-KKR-101',
+    institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+    scopeDescription: 'Tenant-isolated to INST-KKR-101 · Batch commit & attestation issuance',
+  },
+  {
+    id: 'usr_inst_op_kkr',
+    email: 'sarthak.operator@nitkkr.synth.edu',
+    name: 'Sarthak Sulkhlan',
+    role: 'institution_operator',
+    roleLabel: 'Institution Operator',
+    portalType: 'admin',
+    institution_id: 'INST-KKR-101',
+    institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+    scopeDescription: 'Tenant-isolated to INST-KKR-101 · CSV ingestion & student records',
   },
   {
     id: 'usr_auditor',
@@ -66,7 +76,20 @@ export const SYNTHETIC_DEMO_ACCOUNTS: DemoAccount[] = [
     name: 'Vikramjit Sen',
     role: 'auditor',
     roleLabel: 'Security & Audit Reviewer',
+    portalType: 'admin',
     scopeDescription: 'Read-only cryptographic audit timeline & Ed25519 signature verification',
+  },
+  {
+    id: 'usr_student_101',
+    email: 'meera.deshmukh@student.nitkkr.synth.edu',
+    name: 'Meera Deshmukh',
+    role: 'student',
+    roleLabel: 'Student · STU-2026-101',
+    portalType: 'student',
+    student_ref: 'STU-2026-101',
+    institution_id: 'INST-KKR-101',
+    institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+    scopeDescription: 'Authenticated Student Portal · Personal APAAR & Academic Verification',
   },
 ];
 
@@ -77,6 +100,10 @@ export interface WeaveStoreState {
   conflicts: ConflictCase[];
   attestations: AttestationRecord[];
   auditEvents: AuditEvent[];
+  discrepancies: StudentDiscrepancyTicket[];
+  verificationRequests: VerificationRequestRecord[];
+  studentCourseRecords: Record<string, StudentAcademicCourseRecord[]>;
+  studentConsents: Record<string, StudentConsentPreferences>;
 }
 
 export const CSV_TEMPLATE_CONTENT = `student_ref,apaar_id,full_name,dob,program_code,enrollment_year,consent_granted
@@ -129,7 +156,11 @@ export function createInitialWeaveState(): WeaveStoreState {
       name: 'National Institute of Technology Kurukshetra (Synthetic)',
       state: 'Haryana',
       tier: 'Autonomous Technical Institute',
+      university: 'NIT Kurukshetra (Institute of National Importance)',
       status: 'ACTIVE',
+      submission_status: 'Submitted',
+      validation_status: 'Passed',
+      last_submission_date: '2026-10-26',
       programs: [
         {
           program_code: 'BTECH-CSE',
@@ -179,7 +210,11 @@ export function createInitialWeaveState(): WeaveStoreState {
       name: 'Indraprastha Institute of Engineering & Tech (Synthetic)',
       state: 'Delhi NCR',
       tier: 'State Affiliated University Campus',
+      university: 'GGSIP Technological University Delhi',
       status: 'UNDER_REVIEW',
+      submission_status: 'Submitted',
+      validation_status: 'Requires Review',
+      last_submission_date: '2026-10-24',
       programs: [
         {
           program_code: 'BTECH-CSE',
@@ -213,7 +248,11 @@ export function createInitialWeaveState(): WeaveStoreState {
       name: 'Deccan College of Advanced Engineering Pune (Synthetic)',
       state: 'Maharashtra',
       tier: 'Autonomous Technical Institute',
+      university: 'Savitribai Phule Pune University',
       status: 'ACTIVE',
+      submission_status: 'Submitted',
+      validation_status: 'Passed',
+      last_submission_date: '2026-10-25',
       programs: [
         {
           program_code: 'BTECH-CSE',
@@ -229,6 +268,36 @@ export function createInitialWeaveState(): WeaveStoreState {
           approved_intake: 30,
           enrolled_verified: 27,
           flagged_or_pending: 0,
+          academic_year: '2026-27',
+        },
+      ],
+    },
+    {
+      id: 'INST-BLR-408',
+      aicte_code: 'AICTE-SW-4105',
+      name: 'Visvesvaraya Institute of Technology Bengaluru (Synthetic)',
+      state: 'Karnataka',
+      tier: 'State Affiliated University Campus',
+      university: 'Visvesvaraya Technological University (VTU)',
+      status: 'ACTIVE',
+      submission_status: 'Partial Submission',
+      validation_status: 'Requires Review',
+      last_submission_date: '2026-10-22',
+      programs: [
+        {
+          program_code: 'BTECH-CSE',
+          program_title: 'B.Tech Computer Science & Engineering',
+          approved_intake: 180,
+          enrolled_verified: 180,
+          flagged_or_pending: 1,
+          academic_year: '2026-27',
+        },
+        {
+          program_code: 'BTECH-ECE',
+          program_title: 'B.Tech Electronics & Communication',
+          approved_intake: 120,
+          enrolled_verified: 114,
+          flagged_or_pending: 2,
           academic_year: '2026-27',
         },
       ],
@@ -876,6 +945,9 @@ export function createInitialWeaveState(): WeaveStoreState {
       outcome: 'SUCCESS',
       summary:
         'Issued Ed25519 enrolment attestation ATT-2026-901 for STU-2026-101 (APAAR ****-****-4756) under consent CNS-2026-4401.',
+      previous_value: 'ATTESTATION_NONE',
+      updated_value: 'ATT-2026-901 (ACTIVE)',
+      review_decision: 'APPROVED_ISSUANCE',
       created_at: '2026-10-26T15:00:00.000Z',
     },
   ];
@@ -890,6 +962,307 @@ export function createInitialWeaveState(): WeaveStoreState {
     prevHash = event_hash;
   }
 
+  const discrepancies: StudentDiscrepancyTicket[] = [
+    {
+      id: 'DSC-2026-041',
+      student_ref: 'STU-2026-101',
+      student_name: 'Meera Deshmukh',
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      discrepancy_type: 'Semester Record Discrepancy',
+      description:
+        'Semester II Data Structures Laboratory credit count uploaded as 1.5 instead of 2.0 credits per approved curriculum.',
+      relevant_record: 'CSL-204 · Data Structures & Algorithms Lab (Sem II)',
+      supporting_doc_ref: 'NITKKR-EXAM-2026-SEM2-8841',
+      status: 'Resolved',
+      created_at: '2026-10-18T10:15:00.000Z',
+      updated_at: '2026-10-21T16:40:00.000Z',
+      reviewer_notes:
+        'Verified against Dean Academic grade sheet register; updated credit weight to 2.0 and re-verified under Rule STU-002.',
+    },
+    {
+      id: 'DSC-2026-048',
+      student_ref: 'STU-2026-101',
+      student_name: 'Meera Deshmukh',
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      discrepancy_type: 'Name / Date of Birth Correction',
+      description:
+        'Request to include middle initial in institutional transcript display to match NAD/ABC digilocker record.',
+      relevant_record: 'Personal Profile · Full Name Field',
+      supporting_doc_ref: 'CBSE-MATRIC-2024-99102',
+      status: 'Under Review',
+      created_at: '2026-10-25T09:30:00.000Z',
+      updated_at: '2026-10-26T11:20:00.000Z',
+      reviewer_notes: 'Queued with Institutional Nodal Officer (INST-KKR-101) for matriculation verification.',
+    },
+    {
+      id: 'DSC-2026-052',
+      student_ref: 'STU-2026-103',
+      student_name: 'Aarav Sharma',
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      discrepancy_type: 'Duplicate Enrolment Flag Clarification',
+      description:
+        'Submitted JoSAA Round 6 seat withdrawal acknowledgement from IIET Delhi to clear cross-institution conflict CNF-2026-019.',
+      relevant_record: 'Conflict Case CNF-2026-019 (BTECH-CSE)',
+      supporting_doc_ref: 'JOSAA-2026-WDR-77412',
+      status: 'Additional Information Required',
+      created_at: '2026-10-26T15:45:00.000Z',
+      updated_at: '2026-10-27T08:15:00.000Z',
+      reviewer_notes:
+        'Please attach the counter-signed institute relieving letter from IIET Delhi Registrar Office.',
+    },
+  ];
+
+  const verificationRequests: VerificationRequestRecord[] = [
+    {
+      id: 'VRQ-2026-301',
+      student_record_id: 'REC-2026-101',
+      student_ref: 'STU-2026-101',
+      student_name: 'Meera Deshmukh',
+      apaar_masked: maskApaarId('482910384756'),
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      program_code: 'BTECH-CSE',
+      requesting_organisation: 'National Scholarship Portal (NSP) — Ministry of Electronics & IT',
+      organisation_type: 'Government Scholarship',
+      information_requested: [
+        'APAAR Verification Status',
+        'Active Enrolment Status (AY 2026–27)',
+        'AICTE Approved Programme Code (BTECH-CSE)',
+      ],
+      purpose: 'Central Sector Scholarship Renewal & Bonafide Enrolment Check',
+      request_date: '2026-10-26T14:50:00.000Z',
+      status: 'Verified',
+      attestation_token: 'att-2026-901',
+      evidence_source: 'Rule Engine 2026.10.v1 + Ed25519 Attestation ATT-2026-901',
+      reviewed_by: 'dean.academic@nitkkr.synth.edu',
+      reviewed_at: '2026-10-26T15:00:00.000Z',
+    },
+    {
+      id: 'VRQ-2026-302',
+      student_record_id: 'REC-2026-101',
+      student_ref: 'STU-2026-101',
+      student_name: 'Meera Deshmukh',
+      apaar_masked: maskApaarId('482910384756'),
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      program_code: 'BTECH-CSE',
+      requesting_organisation: 'Academic Bank of Credits (ABC) — National Academic Depository',
+      organisation_type: 'Regulatory Body',
+      information_requested: [
+        'Masked APAAR Digest Binding',
+        'Semester I & II Earned Credits (44 Credits)',
+        'Institution AICTE Permanent ID',
+      ],
+      purpose: 'Automated Semester Credit Depository Synchronization',
+      request_date: '2026-10-27T11:15:00.000Z',
+      status: 'Pending',
+      evidence_source: 'Batch BAT-2026-003 Committed Registry + Consent CNS-2026-4401',
+    },
+    {
+      id: 'VRQ-2026-303',
+      student_record_id: 'REC-2026-102',
+      student_ref: 'STU-2026-102',
+      student_name: 'Diya Nair',
+      apaar_masked: maskApaarId('738291048573'),
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      program_code: 'BTECH-ECE',
+      requesting_organisation: 'Academic Bank of Credits (ABC) — National Academic Depository',
+      organisation_type: 'Regulatory Body',
+      information_requested: [
+        'Active Enrolment Status',
+        'AICTE Approved Programme Code (BTECH-ECE)',
+      ],
+      purpose: 'ABC Credit Transfer & Enrolment Verification',
+      request_date: '2026-10-26T15:05:00.000Z',
+      status: 'Verified',
+      attestation_token: 'att-2026-902',
+      evidence_source: 'Ed25519 Attestation ATT-2026-902',
+      reviewed_by: 'dean.academic@nitkkr.synth.edu',
+      reviewed_at: '2026-10-26T15:10:00.000Z',
+    },
+    {
+      id: 'VRQ-2026-304',
+      student_record_id: 'REC-2026-103',
+      student_ref: 'STU-2026-103',
+      student_name: 'Aarav Sharma',
+      apaar_masked: maskApaarId('648291038472'),
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      program_code: 'BTECH-CSE',
+      requesting_organisation: 'DRDO Young Scientist Fellowship Cell (Synthetic)',
+      organisation_type: 'Authorized Employer',
+      information_requested: [
+        'Single-Institution Exclusive Enrolment Confirmation',
+        'B.Tech CSE Bonafide Status',
+      ],
+      purpose: 'Summer Research Internship Eligibility Verification',
+      request_date: '2026-10-26T16:30:00.000Z',
+      status: 'Requires Review',
+      evidence_source: 'Held by Rule STU-005 (Open Cross-Institution Conflict CNF-2026-019)',
+    },
+    {
+      id: 'VRQ-2026-305',
+      student_record_id: 'REC-2026-105',
+      student_ref: 'STU-2026-105',
+      student_name: 'Riya Bansal',
+      apaar_masked: maskApaarId('019283746512'),
+      institution_id: 'INST-KKR-101',
+      institution_name: 'National Institute of Technology Kurukshetra (Synthetic)',
+      program_code: 'BTECH-ASTRO',
+      requesting_organisation: 'State Technical Scholarship Directorate',
+      organisation_type: 'Government Scholarship',
+      information_requested: ['APAAR Format Validity', 'AICTE Approved Course Verification'],
+      purpose: 'Post-Matric Technical Scholarship Verification',
+      request_date: '2026-10-26T17:10:00.000Z',
+      status: 'Unable to Verify',
+      evidence_source: 'Failed STU-001 (Invalid APAAR) & STU-002 (Unapproved Program Code)',
+      reviewed_by: 'system.validation@weave.synth',
+      reviewed_at: '2026-10-26T17:10:05.000Z',
+    },
+  ];
+
+  const studentCourseRecords: Record<string, StudentAcademicCourseRecord[]> = {
+    'STU-2026-101': [
+      {
+        id: 'CRS-101-1',
+        semester: 'Semester I',
+        academic_year: '2025–26',
+        course_code: 'CS-101',
+        course_title: 'Foundations of Computer Systems & Programming',
+        credits: 4,
+        grade: 'A+',
+        sgpa: '9.18',
+        attendance_pct: 94,
+        source_status: 'PLATFORM_VERIFIED',
+        verification_status: 'Verified',
+        verified_at: '2026-05-14',
+      },
+      {
+        id: 'CRS-101-2',
+        semester: 'Semester I',
+        academic_year: '2025–26',
+        course_code: 'MA-103',
+        course_title: 'Linear Algebra, Calculus & Stochastic Processes',
+        credits: 4,
+        grade: 'A',
+        sgpa: '9.18',
+        attendance_pct: 91,
+        source_status: 'PLATFORM_VERIFIED',
+        verification_status: 'Verified',
+        verified_at: '2026-05-14',
+      },
+      {
+        id: 'CRS-101-3',
+        semester: 'Semester II',
+        academic_year: '2025–26',
+        course_code: 'CS-202',
+        course_title: 'Data Structures & Algorithm Design',
+        credits: 4,
+        grade: 'A+',
+        sgpa: '9.32',
+        attendance_pct: 96,
+        source_status: 'PLATFORM_VERIFIED',
+        verification_status: 'Verified',
+        verified_at: '2026-10-21',
+      },
+      {
+        id: 'CRS-101-4',
+        semester: 'Semester II',
+        academic_year: '2025–26',
+        course_code: 'CSL-204',
+        course_title: 'Data Structures & Algorithms Laboratory',
+        credits: 2,
+        grade: 'O',
+        sgpa: '9.32',
+        attendance_pct: 98,
+        source_status: 'PLATFORM_VERIFIED',
+        verification_status: 'Verified',
+        verified_at: '2026-10-21',
+      },
+      {
+        id: 'CRS-101-5',
+        semester: 'Semester III (Current)',
+        academic_year: '2026–27',
+        course_code: 'CS-301',
+        course_title: 'Operating Systems & Kernel Architecture',
+        credits: 4,
+        grade: 'In Progress',
+        attendance_pct: 92,
+        source_status: 'INSTITUTION_UPLOADED',
+        verification_status: 'Pending',
+      },
+      {
+        id: 'CRS-101-6',
+        semester: 'Semester III (Current)',
+        academic_year: '2026–27',
+        course_code: 'CS-305',
+        course_title: 'Applied Cryptography & Network Security',
+        credits: 4,
+        grade: 'In Progress',
+        attendance_pct: 95,
+        source_status: 'INSTITUTION_UPLOADED',
+        verification_status: 'Pending',
+      },
+    ],
+  };
+
+  const studentConsents: Record<string, StudentConsentPreferences> = {
+    'STU-2026-101': {
+      student_ref: 'STU-2026-101',
+      scholarship_portals_enabled: true,
+      credit_transfer_abc_enabled: true,
+      employer_verification_enabled: false,
+      statutory_aicte_reporting_enabled: true,
+      updated_at: '2026-10-26T15:00:00.000Z',
+      consent_history: [
+        {
+          id: 'CNS-HIST-01',
+          action: 'CONSENT_GRANTED',
+          scope: 'National Scholarship Portal (NSP) & ABC Depository Verification (CNS-2026-4401)',
+          timestamp: '2026-10-26T14:15:00.000Z',
+          actor: 'Meera Deshmukh (STU-2026-101)',
+        },
+        {
+          id: 'CNS-HIST-02',
+          action: 'PREFERENCE_UPDATED',
+          scope: 'Restricted Third-Party Employer Background Checks to Explicit Per-Request Approval',
+          timestamp: '2026-10-22T18:05:00.000Z',
+          actor: 'Meera Deshmukh (STU-2026-101)',
+        },
+      ],
+      access_logs: [
+        {
+          id: 'ACC-2026-81',
+          organisation: 'National Scholarship Portal (NSP)',
+          purpose: 'Central Sector Scholarship Bonafide Verification (ATT-2026-901)',
+          fields_shared: 'Masked APAAR (****-****-4756), Institution ID, BTECH-CSE Enrolment Status',
+          accessed_at: '2026-10-26T15:02:11.000Z',
+          status: 'Authorized',
+        },
+        {
+          id: 'ACC-2026-79',
+          organisation: 'AICTE Intake Compliance Engine',
+          purpose: 'Statutory AY 2026–27 Sanctioned Intake Verification (Batch BAT-2026-003)',
+          fields_shared: 'Salted SHA-256 Digest, Programme Code, Admission Year',
+          accessed_at: '2026-10-26T14:20:04.000Z',
+          status: 'Authorized',
+        },
+        {
+          id: 'ACC-2026-74',
+          organisation: 'External Recruitment Aggregator (Unverified)',
+          purpose: 'Bulk Graduate Directory Scrape Attempt',
+          fields_shared: 'None (Blocked by Student Consent Policy)',
+          accessed_at: '2026-10-24T11:40:00.000Z',
+          status: 'Blocked (No Consent)',
+        },
+      ],
+    },
+  };
+
   return {
     institutions,
     batches,
@@ -897,5 +1270,9 @@ export function createInitialWeaveState(): WeaveStoreState {
     conflicts,
     attestations,
     auditEvents: chainedChronological.reverse(),
+    discrepancies,
+    verificationRequests,
+    studentCourseRecords,
+    studentConsents,
   };
 }
